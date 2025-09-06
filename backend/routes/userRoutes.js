@@ -1,5 +1,5 @@
-/*
-//userRoutes.js
+// backend/routes/
+userRoutes.js
 const router = require('express').Router();
 const User = require('../models/User');
 const { requireAuth } = require('../middlewares/authMiddleware');
@@ -45,4 +45,6 @@ router.patch('/:id/deactivate', requireAuth(['ADMIN']), async (req, res, next) =
 });
 
 module.exports = router;
-*/
+const route = require('express').Router();
+const User = require('../models/User');
+const { requireAuth } = require('../middlewares/authMiddleware');
