@@ -5,6 +5,6 @@ const performanceReviewSchema = new mongoose.Schema({
   date: { type: Date, default: Date.now },
   rating: { type: Number, min: 1, max: 5, required: true },
   remarks: { type: String }
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model("PerformanceReview", performanceReviewSchema);

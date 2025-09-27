@@ -3,9 +3,12 @@ import React, { useState } from 'react';
 const StaffForm = () => {
   const [form, setForm] = useState({
     staffName: '',
+    email: '',
     role: '',
     salary: '',
     contactNo: '',
+    status: 'Active',
+    address: '',
   });
 
   const handleChange = (e) => {
@@ -24,9 +27,12 @@ const StaffForm = () => {
         alert('Staff details saved!');
         setForm({
           staffName: '',
+          email: '',
           role: '',
           salary: '',
           contactNo: '',
+          status: 'Active',
+          address: '',
         });
       } else {
         alert('Error saving staff details');
@@ -39,6 +45,7 @@ const StaffForm = () => {
   return (
     <form onSubmit={handleSubmit}>
       <h2>Staff Account Management</h2>
+
       <label>
         Name:
         <input
@@ -50,6 +57,19 @@ const StaffForm = () => {
         />
       </label>
       <br />
+
+      <label>
+        Email:
+        <input
+          type="email"
+          name="email"
+          value={form.email}
+          onChange={handleChange}
+          required
+        />
+      </label>
+      <br />
+
       <label>
         Role:
         <input
@@ -61,6 +81,7 @@ const StaffForm = () => {
         />
       </label>
       <br />
+
       <label>
         Salary:
         <input
@@ -68,10 +89,12 @@ const StaffForm = () => {
           name="salary"
           value={form.salary}
           onChange={handleChange}
+          min="0"
           required
         />
       </label>
       <br />
+
       <label>
         Contact No:
         <input
@@ -79,10 +102,33 @@ const StaffForm = () => {
           name="contactNo"
           value={form.contactNo}
           onChange={handleChange}
+          pattern="\d{10}"
+          title="Enter 10-digit contact number"
           required
         />
       </label>
       <br />
+
+      <label>
+        Address:
+        <input
+          type="text"
+          name="address"
+          value={form.address}
+          onChange={handleChange}
+        />
+      </label>
+      <br />
+
+      <label>
+        Status:
+        <select name="status" value={form.status} onChange={handleChange}>
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+        </select>
+      </label>
+      <br />
+
       <button type="submit">Submit</button>
     </form>
   );
