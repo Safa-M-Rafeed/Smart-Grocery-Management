@@ -1,16 +1,22 @@
-import React from 'react';
-import StaffForm from './components/StaffForm';
-import StaffSearch from './components/StaffSearch';
-import StaffList from './components/StaffList';
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Layout from "./components/Layout";
+import HomePage from "./pages/HomePage";
 
 function App() {
   return (
-    <div>
-      <StaffForm />
-      <StaffSearch />
-      <StaffList />
-
-    </div>
+    <Router>
+      <Routes>
+        <Route element={<Layout />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/about" element={<div>About Page</div>} />
+          <Route path="/features" element={<div>Features Page</div>} />
+          <Route path="/shop" element={<div>Shop Page</div>} />
+          <Route path="/contact" element={<div>Contact Page</div>} />
+          <Route path="/login" element={<div>Login Page</div>} />
+          <Route path="/register" element={<div>Register Page</div>} />
+        </Route>
+      </Routes>
+    </Router>
   );
 }
 
