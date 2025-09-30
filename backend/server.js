@@ -25,6 +25,10 @@ connectDB();
 const staffRoutes = require('./routes/staff');
 app.use('/api/staff', staffRoutes);
 
+// Auth routes
+const authRoutes = require('./routes/authRoutes');
+app.use('/api/auth', authRoutes);
+
 // Start server
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
