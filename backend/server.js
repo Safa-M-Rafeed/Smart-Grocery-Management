@@ -33,6 +33,10 @@ app.use('/api/auth', authRoutes);
 const productRoutes = require('./routes/productRoutes');
 app.use('/api/products', productRoutes);
 
+// Customer routes
+const customerRoutes = require('./routes/customerRoutes');
+app.use('/api/customers', customerRoutes);
+
 // Start server
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
