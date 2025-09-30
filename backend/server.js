@@ -29,6 +29,10 @@ app.use('/api/staff', staffRoutes);
 const authRoutes = require('./routes/authRoutes');
 app.use('/api/auth', authRoutes);
 
+// Product routes
+const productRoutes = require('./routes/productRoutes');
+app.use('/api/products', productRoutes);
+
 // Start server
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
