@@ -5,16 +5,16 @@ const CustomerAddress = require('../models/CustomerAddress');
 const checkCustomerByPhone = async (req, res) => {
   try {
     const { phone } = req.query;
-    
+
     if (!phone) {
       return res.status(400).json({ message: 'Phone number is required' });
     }
 
     const customer = await Customer.findOne({ phone });
-    
+
     if (customer) {
-      res.json({ 
-        exists: true, 
+      res.json({
+        exists: true,
         customer: {
           _id: customer._id,
           customerName: customer.customerName,
@@ -35,15 +35,15 @@ const checkCustomerByPhone = async (req, res) => {
 const checkCustomerByEmail = async (req, res) => {
   try {
     const { email } = req.query;
-    
+
     if (!email) {
       return res.status(400).json({ message: 'Email is required' });
     }
 
     const customer = await Customer.findOne({ email });
-    
+
     if (customer) {
-      res.json({ 
+      res.json({
         exists: true,
         hasLoyaltyCard: !!customer.phone, // Has loyalty card if phone exists
         customer: {
@@ -68,16 +68,16 @@ const addPhoneToExistingCustomer = async (req, res) => {
     const { email, phone } = req.body;
 
     if (!email || !phone) {
-      return res.status(400).json({ 
-        message: 'Email and phone number are required' 
+      return res.status(400).json({
+        message: 'Email and phone number are required'
       });
     }
 
     // Check if phone number already exists with another customer
     const existingPhoneCustomer = await Customer.findOne({ phone });
     if (existingPhoneCustomer && existingPhoneCustomer.email !== email) {
-      return res.status(400).json({ 
-        message: 'This phone number is already associated with another customer' 
+      return res.status(400).json({
+        message: 'This phone number is already associated with another customer'
       });
     }
 
@@ -114,24 +114,24 @@ const createCustomer = async (req, res) => {
 
     // Validate required fields
     if (!customerName || !email || !phone) {
-      return res.status(400).json({ 
-        message: 'Customer name, email, and phone are required' 
+      return res.status(400).json({
+        message: 'Customer name, email, and phone are required'
       });
     }
 
     // Check if phone number already exists
     const existingCustomerByPhone = await Customer.findOne({ phone });
     if (existingCustomerByPhone) {
-      return res.status(400).json({ 
-        message: 'This phone number is already associated with another customer' 
+      return res.status(400).json({
+        message: 'This phone number is already associated with another customer'
       });
     }
 
     // Check if email already exists
     const existingCustomerByEmail = await Customer.findOne({ email });
     if (existingCustomerByEmail) {
-      return res.status(400).json({ 
-        message: 'Customer with this email already exists. Use "Add Phone to Existing Customer" option.' 
+      return res.status(400).json({
+        message: 'Customer with this email already exists. Use "Add Phone to Existing Customer" option.'
       });
     }
 
@@ -170,17 +170,17 @@ const createCustomer = async (req, res) => {
       const messages = Object.values(error.errors).map(err => err.message);
       return res.status(400).json({ message: messages.join(', ') });
     }
-    
+
     // Handle duplicate key errors
     if (error.code === 11000) {
       const duplicateField = Object.keys(error.keyPattern)[0];
       if (duplicateField === 'phone') {
-        return res.status(400).json({ 
-          message: 'This phone number is already associated with another customer' 
+        return res.status(400).json({
+          message: 'This phone number is already associated with another customer'
         });
       }
-      return res.status(400).json({ 
-        message: 'Customer already exists' 
+      return res.status(400).json({
+        message: 'Customer already exists'
       });
     }
 
@@ -194,4 +194,3 @@ module.exports = {
   addPhoneToExistingCustomer,
   createCustomer
 };
- 
