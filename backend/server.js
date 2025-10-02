@@ -37,6 +37,10 @@ app.use('/api/products', productRoutes);
 const customerRoutes = require('./routes/customerRoutes');
 app.use('/api/customers', customerRoutes);
 
+// Loyalty routes
+const loyaltyRoutes = require('./routes/LoyaltyRoute');
+app.use('/api/loyalty', loyaltyRoutes);
+
 // Start server
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
