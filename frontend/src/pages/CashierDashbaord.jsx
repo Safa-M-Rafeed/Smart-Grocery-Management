@@ -13,8 +13,10 @@ import {
   Mail,
   MapPin,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const CashierDashboard = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [products, setProducts] = useState([]);
   const [cartItems, setCartItems] = useState([]);
@@ -430,55 +432,22 @@ const CashierDashboard = () => {
       return;
     }
 
-    try {
-      const token = localStorage.getItem("token");
-      const finalAmount = getFinalTotal();
+    // Prepare order data
+    const orderData = {
+      cartItems,
+      customer,
+      loyaltyDiscount,
+      pointsToRedeem,
+      subtotal: calculateTotal(),
+      finalTotal: getFinalTotal(),
+      pointsToEarn: getPointsToEarn()
+    };
 
-      // If customer exists and points were redeemed or earned
-      if (customer) {
-        const pointsEarned = getPointsToEarn();
+    // Store order data in sessionStorage for OrderPayment page
+    sessionStorage.setItem("orderData", JSON.stringify(orderData));
 
-        // Create purchase loyalty transaction
-        const loyaltyResponse = await fetch("http://localhost:4000/api/loyalty/purchase", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            customerID: customer._id,
-            orderID: null, // You can generate an order ID here
-            totalAmount: finalAmount,
-            pointsRedeemed: loyaltyDiscount
-          }),
-        });
-
-        if (loyaltyResponse.ok) {
-          const loyaltyData = await loyaltyResponse.json();
-
-          // Update customer points in state
-          setCustomer({
-            ...customer,
-            loyaltyPoints: loyaltyData.newLoyaltyPoints
-          });
-
-          alert(`Payment processed successfully! 
-                 Transaction ID: ${loyaltyData.transaction.transactionID}
-                 Points Earned: ${pointsEarned}
-                 Points Redeemed: ${loyaltyDiscount}
-                 New Balance: ${loyaltyData.newLoyaltyPoints} points`);
-        }
-      } else {
-        alert(`Payment processed successfully! 
-               Total Amount: LKR ${finalAmount.toFixed(2)}`);
-      }
-
-      // Clear cart after successful payment
-      clearCart();
-
-    } catch (error) {
-      setError("Failed to process payment. Please try again.");
-    }
+    // Navigate to payment page
+    navigate("/order-payment");
   };
 
   // Continue without loyalty card - show offer to create new card
@@ -1127,3 +1096,4 @@ const CashierDashboard = () => {
 };
 
 export default CashierDashboard;
+
