@@ -26,6 +26,7 @@ const CashierDashboard = () => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [customer, setCustomer] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCreateOfferModal, setShowCreateOfferModal] = useState(false); // New state for offer modal
   const [loyaltyDiscount, setLoyaltyDiscount] = useState(0);
   const [pointsToRedeem, setPointsToRedeem] = useState(0);
   const [newCustomerData, setNewCustomerData] = useState({
@@ -178,10 +179,12 @@ const CashierDashboard = () => {
         const data = await response.json();
         if (data.exists) {
           setCustomer(data.customer);
+          setShowLoyaltyCheck(false); // Close loyalty check modal
           setError("");
         } else {
           setCustomer(null);
-          setShowCreateModal(true);
+          setShowLoyaltyCheck(false);
+          setShowCreateOfferModal(true); // Show create offer modal
         }
       } else {
         setError("Failed to check customer");
@@ -191,9 +194,33 @@ const CashierDashboard = () => {
     }
   };
 
+  // Continue without loyalty card - show offer to create new card
+  const continueWithoutCard = () => {
+    setShowLoyaltyCheck(false);
+    setShowCreateOfferModal(true);
+  };
+
+  // Decline creating loyalty card and proceed to payment
+  const declineCreateCard = () => {
+    setShowCreateOfferModal(false);
+    processPayment();
+  };
+
+  // Accept creating loyalty card
+  const acceptCreateCard = () => {
+    setShowCreateOfferModal(false);
+    setShowCreateModal(true);
+  };
+
   const createLoyaltyCard = async () => {
     try {
       const token = localStorage.getItem("token");
+
+      // Validate required fields including phone number
+      if (!newCustomerData.customerName || !newCustomerData.email || !phoneNumber.trim()) {
+        setError("Please fill in all required fields including phone number");
+        return;
+      }
 
       // First create the customer
       const customerResponse = await fetch("http://localhost:4000/api/customers", {
@@ -204,13 +231,13 @@ const CashierDashboard = () => {
         },
         body: JSON.stringify({
           ...newCustomerData,
-          phone: phoneNumber,
+          phone: phoneNumber.trim(),
         }),
       });
 
-      if (customerResponse.ok) {
-        const customerData = await customerResponse.json();
+      const customerData = await customerResponse.json();
 
+      if (customerResponse.ok) {
         // Create loyalty transaction for card creation
         const loyaltyResponse = await fetch("http://localhost:4000/api/loyalty", {
           method: "POST",
@@ -230,23 +257,35 @@ const CashierDashboard = () => {
           const loyaltyData = await loyaltyResponse.json();
           setCustomer(customerData.customer);
           setShowCreateModal(false);
-          setShowLoyaltyCheck(false);
           setNewCustomerData({
             customerName: "",
             email: "",
             phone: "",
             address: "",
           });
+          setPhoneNumber("");
           setError("");
 
-          // Show success message
-          alert(`Loyalty card created successfully! Transaction ID: ${loyaltyData.transaction.transactionID}`);
+          // Show success message and proceed to payment
+          alert(`Loyalty card created successfully! 
+                 Customer: ${customerData.customer.customerName}
+                 Phone: ${customerData.customer.phone}
+                 Transaction ID: ${loyaltyData.transaction.transactionID}
+                 
+                 You can now proceed with the payment.`);
+
+          // Don't automatically process payment - let user proceed manually
+          // processPayment();
         } else {
           setError("Customer created but failed to create loyalty transaction");
         }
       } else {
-        const errorData = await customerResponse.json();
-        setError(errorData.message || "Failed to create loyalty card");
+        // Show specific error message
+        if (customerData.message.includes('phone number')) {
+          setError("A loyalty card already exists for this phone number. Please use the existing customer or check the phone number.");
+        } else {
+          setError(customerData.message || "Failed to create loyalty card");
+        }
       }
     } catch (error) {
       setError("Network error. Please try again.");
@@ -349,10 +388,10 @@ const CashierDashboard = () => {
   };
 
   // Continue without loyalty card
-  const continueWithoutCard = () => {
-    setShowLoyaltyCheck(false);
-    processPayment();
-  };
+  // const continueWithoutCard = () => {
+  //   setShowLoyaltyCheck(false);
+  //   setShowCreateOfferModal(true);
+  // };
 
   return (
     <div className="min-h-screen p-4 bg-gray-50">
@@ -627,7 +666,7 @@ const CashierDashboard = () => {
               </div>
 
               <p className="mb-4 text-gray-600">
-                Does the customer have a loyalty card?
+                Enter customer's phone number to check for existing loyalty card:
               </p>
 
               <div className="space-y-4">
@@ -660,6 +699,56 @@ const CashierDashboard = () => {
                     No Loyalty Card
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Create Loyalty Card Offer Modal */}
+        {showCreateOfferModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="w-full max-w-md p-6 bg-white rounded-lg">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="flex items-center text-lg font-semibold text-gray-800">
+                  <Gift className="mr-2 text-primary1" size={20} />
+                  Create Loyalty Card?
+                </h3>
+                <button
+                  onClick={() => setShowCreateOfferModal(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="mb-6">
+                <p className="mb-3 text-gray-600">
+                  Would you like to create a loyalty card for this customer?
+                </p>
+                <div className="p-3 rounded-lg bg-primary4/20">
+                  <h4 className="mb-2 font-medium text-primary1">Benefits:</h4>
+                  <ul className="space-y-1 text-sm text-gray-600">
+                    <li>• Earn 1 point for every LKR 100 spent</li>
+                    <li>• Redeem points for discounts (1 point = LKR 1)</li>
+                    <li>• Track purchase history</li>
+                    <li>• Special offers and promotions</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <button
+                  onClick={acceptCreateCard}
+                  className="w-full px-4 py-3 text-white transition-colors rounded-lg bg-primary1 hover:bg-primary2"
+                >
+                  Yes, Create Loyalty Card
+                </button>
+                <button
+                  onClick={declineCreateCard}
+                  className="w-full px-4 py-3 text-gray-700 transition-colors bg-gray-200 rounded-lg hover:bg-gray-300"
+                >
+                  No, Continue Without Card
+                </button>
               </div>
             </div>
           </div>
@@ -751,15 +840,35 @@ const CashierDashboard = () => {
                 </button>
               </div>
 
-              <p className="mb-4 text-gray-600">
-                Customer not found. Would you like to create a new loyalty card?
-              </p>
+              <div className="p-3 mb-4 border border-blue-200 rounded-lg bg-blue-50">
+                <p className="text-sm text-blue-800">
+                  <strong>Phone Number:</strong> {phoneNumber || "Not entered"}
+                </p>
+                <p className="mt-1 text-xs text-blue-600">
+                  Loyalty card will be created for this phone number
+                </p>
+              </div>
 
               <div className="space-y-4">
                 <div>
                   <label className="block mb-2 text-sm font-medium text-gray-700">
+                    <Phone className="inline mr-1" size={16} />
+                    Phone Number *
+                  </label>
+                  <input
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary1"
+                    placeholder="Enter phone number"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block mb-2 text-sm font-medium text-gray-700">
                     <User className="inline mr-1" size={16} />
-                    Full Name
+                    Full Name *
                   </label>
                   <input
                     type="text"
@@ -772,13 +881,14 @@ const CashierDashboard = () => {
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary1"
                     placeholder="Enter customer name"
+                    required
                   />
                 </div>
 
                 <div>
                   <label className="block mb-2 text-sm font-medium text-gray-700">
                     <Mail className="inline mr-1" size={16} />
-                    Email
+                    Email *
                   </label>
                   <input
                     type="email"
@@ -791,6 +901,7 @@ const CashierDashboard = () => {
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary1"
                     placeholder="Enter email address"
+                    required
                   />
                 </div>
 
@@ -813,18 +924,30 @@ const CashierDashboard = () => {
                   />
                 </div>
 
+                {!phoneNumber.trim() && (
+                  <div className="p-3 border border-red-200 rounded-lg bg-red-50">
+                    <p className="text-sm text-red-700">
+                      ⚠️ Phone number is required for loyalty card creation
+                    </p>
+                  </div>
+                )}
+
                 <div className="flex space-x-3">
                   <button
-                    onClick={() => setShowCreateModal(false)}
+                    onClick={() => {
+                      setShowCreateModal(false);
+                      setShowCreateOfferModal(true);
+                    }}
                     className="flex-1 px-4 py-2 text-gray-700 transition-colors bg-gray-200 rounded-lg hover:bg-gray-300"
                   >
-                    Cancel
+                    Back
                   </button>
                   <button
                     onClick={createLoyaltyCard}
-                    className="flex-1 px-4 py-2 text-white transition-colors rounded-lg bg-primary1 hover:bg-primary2"
+                    disabled={!phoneNumber.trim() || !newCustomerData.customerName || !newCustomerData.email}
+                    className="flex-1 px-4 py-2 text-white transition-colors rounded-lg bg-primary1 hover:bg-primary2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Create Card
+                    Create Loyalty Card
                   </button>
                 </div>
               </div>

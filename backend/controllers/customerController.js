@@ -44,14 +44,20 @@ const createCustomer = async (req, res) => {
             });
         }
 
-        // Check if customer already exists
-        const existingCustomer = await Customer.findOne({
-            $or: [{ email }, { phone }]
-        });
+        // Check if customer already exists by phone number (loyalty cards are phone-based)
+        const existingCustomerByPhone = await Customer.findOne({ phone });
 
-        if (existingCustomer) {
+        if (existingCustomerByPhone) {
             return res.status(400).json({
-                message: 'Customer with this email or phone already exists'
+                message: 'Customer with this phone number already has a loyalty card'
+            });
+        }
+
+        // Check if email already exists (but allow different customers with same email if different phone)
+        const existingCustomerByEmail = await Customer.findOne({ email });
+        if (existingCustomerByEmail) {
+            return res.status(400).json({
+                message: 'Customer with this email already exists'
             });
         }
 
@@ -75,7 +81,7 @@ const createCustomer = async (req, res) => {
         }
 
         res.status(201).json({
-            message: 'Customer created successfully',
+            message: 'Customer and loyalty card created successfully',
             customer: {
                 _id: savedCustomer._id,
                 customerName: savedCustomer.customerName,
@@ -93,9 +99,18 @@ const createCustomer = async (req, res) => {
 
         // Handle duplicate key errors
         if (error.code === 11000) {
-            const field = Object.keys(error.keyPattern)[0];
+            const duplicateField = Object.keys(error.keyPattern)[0];
+            if (duplicateField === 'phone') {
+                return res.status(400).json({
+                    message: 'Customer with this phone number already has a loyalty card'
+                });
+            } else if (duplicateField === 'email') {
+                return res.status(400).json({
+                    message: 'Customer with this email already exists'
+                });
+            }
             return res.status(400).json({
-                message: `Customer with this ${field} already exists`
+                message: 'Customer already exists'
             });
         }
 
