@@ -77,8 +77,58 @@ const getOrderById = async (req, res) => {
     }
 };
 
+// Update order
+const updateOrder = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { totalAmount, paymentMethod, status, loyaltyPointsUsed, loyaltyDiscount } = req.body;
+
+        const order = await Order.findByIdAndUpdate(
+            id,
+            {
+                totalAmount,
+                paymentMethod: paymentMethod?.toUpperCase(),
+                status,
+                loyaltyPointsUsed: loyaltyPointsUsed || 0,
+                loyaltyDiscount: loyaltyDiscount || 0
+            },
+            { new: true }
+        ).populate('customerID', 'customerName phone email');
+
+        if (!order) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+
+        res.json({
+            message: 'Order updated successfully',
+            order
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+// Delete order
+const deleteOrder = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const order = await Order.findByIdAndDelete(id);
+
+        if (!order) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+
+        res.json({ message: 'Order deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
 module.exports = {
     createOrder,
     getAllOrders,
-    getOrderById
+    getOrderById,
+    updateOrder,
+    deleteOrder
 };

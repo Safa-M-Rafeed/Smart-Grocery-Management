@@ -436,4 +436,3 @@ const LoanLoyaltyManagement = () => {
 };
 
 export default LoanLoyaltyManagement;
-

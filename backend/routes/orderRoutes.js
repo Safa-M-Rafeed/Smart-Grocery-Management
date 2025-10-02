@@ -2,7 +2,9 @@ const router = require('express').Router();
 const {
     createOrder,
     getAllOrders,
-    getOrderById
+    getOrderById,
+    updateOrder,
+    deleteOrder
 } = require('../controllers/orderController');
 
 // Create order
@@ -14,5 +16,10 @@ router.get('/', getAllOrders);
 // Get order by ID
 router.get('/:id', getOrderById);
 
-module.exports = router;
+// Update order
+router.put('/:id', updateOrder);
+
+// Delete order
+router.delete('/:id', deleteOrder);
+
 module.exports = router;
