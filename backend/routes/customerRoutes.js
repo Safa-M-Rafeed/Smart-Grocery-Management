@@ -1,25 +1,25 @@
 const router = require('express').Router();
 const {
     checkCustomerByPhone,
-    createCustomer,
-    calculateLoyaltyPoints,
-    applyLoyaltyDiscount
+    checkCustomerByEmail,
+    addPhoneToExistingCustomer,
+    createCustomer
 } = require('../controllers/customerController');
 const { requireAuth } = require('../middlewares/authMiddleware');
 
 // Check customer by phone
 router.get('/check-phone', requireAuth(['ADMIN', 'CASHIER']), checkCustomerByPhone);
 
-// Create new customer
+// Check customer by email and loyalty card status
+router.get('/check-email', requireAuth(['ADMIN', 'CASHIER']), checkCustomerByEmail);
+
+// Add phone number to existing customer for loyalty card
+router.patch('/add-phone', requireAuth(['ADMIN', 'CASHIER']), addPhoneToExistingCustomer);
+
+// Create new customer with loyalty card
 router.post('/', requireAuth(['ADMIN', 'CASHIER']), createCustomer);
 
-// Calculate loyalty points
-router.post('/calculate-points', requireAuth(['ADMIN', 'CASHIER']), (req, res) => {
-    const { totalAmount } = req.body;
-    const points = calculateLoyaltyPoints(totalAmount);
-    res.json({ points });
-});
-
+module.exports = router;
 // Calculate discount
 router.post('/calculate-discount', requireAuth(['ADMIN', 'CASHIER']), (req, res) => {
     const { totalAmount, pointsToRedeem } = req.body;

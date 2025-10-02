@@ -1,226 +1,197 @@
 const Customer = require('../models/Customer');
 const CustomerAddress = require('../models/CustomerAddress');
-const LoyaltyTransaction = require('../models/LoyaltyTransaction');
 
 // Check customer by phone number
 const checkCustomerByPhone = async (req, res) => {
-    try {
-        const { phone } = req.query;
-
-        if (!phone) {
-            return res.status(400).json({ message: 'Phone number is required' });
-        }
-
-        const customer = await Customer.findOne({ phone });
-
-        if (customer) {
-            res.json({
-                exists: true,
-                customer: {
-                    _id: customer._id,
-                    customerName: customer.customerName,
-                    email: customer.email,
-                    phone: customer.phone,
-                    loyaltyPoints: customer.loyaltyPoints
-                }
-            });
-        } else {
-            res.json({ exists: false });
-        }
-    } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+  try {
+    const { phone } = req.query;
+    
+    if (!phone) {
+      return res.status(400).json({ message: 'Phone number is required' });
     }
+
+    const customer = await Customer.findOne({ phone });
+    
+    if (customer) {
+      res.json({ 
+        exists: true, 
+        customer: {
+          _id: customer._id,
+          customerName: customer.customerName,
+          email: customer.email,
+          phone: customer.phone,
+          loyaltyPoints: customer.loyaltyPoints
+        }
+      });
+    } else {
+      res.json({ exists: false });
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// Check customer by email and return loyalty card status
+const checkCustomerByEmail = async (req, res) => {
+  try {
+    const { email } = req.query;
+    
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    const customer = await Customer.findOne({ email });
+    
+    if (customer) {
+      res.json({ 
+        exists: true,
+        hasLoyaltyCard: !!customer.phone, // Has loyalty card if phone exists
+        customer: {
+          _id: customer._id,
+          customerName: customer.customerName,
+          email: customer.email,
+          phone: customer.phone,
+          loyaltyPoints: customer.loyaltyPoints
+        }
+      });
+    } else {
+      res.json({ exists: false, hasLoyaltyCard: false });
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// Add phone number to existing customer (for loyalty card)
+const addPhoneToExistingCustomer = async (req, res) => {
+  try {
+    const { email, phone } = req.body;
+
+    if (!email || !phone) {
+      return res.status(400).json({ 
+        message: 'Email and phone number are required' 
+      });
+    }
+
+    // Check if phone number already exists with another customer
+    const existingPhoneCustomer = await Customer.findOne({ phone });
+    if (existingPhoneCustomer && existingPhoneCustomer.email !== email) {
+      return res.status(400).json({ 
+        message: 'This phone number is already associated with another customer' 
+      });
+    }
+
+    // Find customer by email and update phone
+    const customer = await Customer.findOneAndUpdate(
+      { email },
+      { phone },
+      { new: true }
+    );
+
+    if (!customer) {
+      return res.status(404).json({ message: 'Customer not found' });
+    }
+
+    res.json({
+      message: 'Phone number added successfully - Loyalty card activated',
+      customer: {
+        _id: customer._id,
+        customerName: customer.customerName,
+        email: customer.email,
+        phone: customer.phone,
+        loyaltyPoints: customer.loyaltyPoints
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
 };
 
 // Create new customer with loyalty card
 const createCustomer = async (req, res) => {
-    try {
-        const { customerName, email, phone, address } = req.body;
+  try {
+    const { customerName, email, phone, address } = req.body;
 
-        // Validate required fields
-        if (!customerName || !email || !phone) {
-            return res.status(400).json({
-                message: 'Customer name, email, and phone are required'
-            });
-        }
-
-        // Check if customer already exists by phone number (loyalty cards are phone-based)
-        const existingCustomerByPhone = await Customer.findOne({ phone });
-
-        if (existingCustomerByPhone) {
-            return res.status(400).json({
-                message: 'Customer with this phone number already has a loyalty card'
-            });
-        }
-
-        // Check if email already exists (but allow different customers with same email if different phone)
-        const existingCustomerByEmail = await Customer.findOne({ email });
-        if (existingCustomerByEmail) {
-            return res.status(400).json({
-                message: 'Customer with this email already exists'
-            });
-        }
-
-        // Create customer with initial 0 loyalty points
-        const customer = new Customer({
-            customerName,
-            email,
-            phone,
-            loyaltyPoints: 0
-        });
-
-        const savedCustomer = await customer.save();
-
-        // Create address if provided
-        if (address && address.trim()) {
-            const customerAddress = new CustomerAddress({
-                customerID: savedCustomer._id,
-                address: address.trim()
-            });
-            await customerAddress.save();
-        }
-
-        res.status(201).json({
-            message: 'Customer and loyalty card created successfully',
-            customer: {
-                _id: savedCustomer._id,
-                customerName: savedCustomer.customerName,
-                email: savedCustomer.email,
-                phone: savedCustomer.phone,
-                loyaltyPoints: savedCustomer.loyaltyPoints
-            }
-        });
-    } catch (error) {
-        // Handle validation errors
-        if (error.name === 'ValidationError') {
-            const messages = Object.values(error.errors).map(err => err.message);
-            return res.status(400).json({ message: messages.join(', ') });
-        }
-
-        // Handle duplicate key errors
-        if (error.code === 11000) {
-            const duplicateField = Object.keys(error.keyPattern)[0];
-            if (duplicateField === 'phone') {
-                return res.status(400).json({
-                    message: 'Customer with this phone number already has a loyalty card'
-                });
-            } else if (duplicateField === 'email') {
-                return res.status(400).json({
-                    message: 'Customer with this email already exists'
-                });
-            }
-            return res.status(400).json({
-                message: 'Customer already exists'
-            });
-        }
-
-        res.status(500).json({ message: 'Server error', error: error.message });
+    // Validate required fields
+    if (!customerName || !email || !phone) {
+      return res.status(400).json({ 
+        message: 'Customer name, email, and phone are required' 
+      });
     }
-};
 
-// Update customer loyalty points and create transaction
-const updateLoyaltyPoints = async (req, res) => {
-    try {
-        const { customerId } = req.params;
-        const { pointsEarned, pointsRedeemed, orderID, totalAmount } = req.body;
-
-        const customer = await Customer.findById(customerId);
-        if (!customer) {
-            return res.status(404).json({ message: 'Customer not found' });
-        }
-
-        // Calculate new loyalty points
-        let newPoints = customer.loyaltyPoints;
-        if (pointsEarned) newPoints += pointsEarned;
-        if (pointsRedeemed) newPoints -= pointsRedeemed;
-        newPoints = Math.max(0, newPoints); // Ensure non-negative
-
-        // Update customer
-        customer.loyaltyPoints = newPoints;
-        const updatedCustomer = await customer.save();
-
-        // Create loyalty transaction
-        const transactionID = `LT${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-        const loyaltyTransaction = new LoyaltyTransaction({
-            transactionID,
-            customerID: customerId,
-            orderID: orderID || null,
-            pointsEarned: pointsEarned || 0,
-            pointsRedeemed: pointsRedeemed || 0
-        });
-
-        await loyaltyTransaction.save();
-
-        res.json({
-            message: 'Loyalty points updated successfully',
-            customer: {
-                _id: updatedCustomer._id,
-                customerName: updatedCustomer.customerName,
-                email: updatedCustomer.email,
-                phone: updatedCustomer.phone,
-                loyaltyPoints: updatedCustomer.loyaltyPoints
-            },
-            loyaltyTransaction: {
-                transactionID: loyaltyTransaction.transactionID,
-                pointsEarned: loyaltyTransaction.pointsEarned,
-                pointsRedeemed: loyaltyTransaction.pointsRedeemed,
-                date: loyaltyTransaction.date
-            }
-        });
-    } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+    // Check if phone number already exists
+    const existingCustomerByPhone = await Customer.findOne({ phone });
+    if (existingCustomerByPhone) {
+      return res.status(400).json({ 
+        message: 'This phone number is already associated with another customer' 
+      });
     }
-};
 
-// Get customer by ID
-const getCustomerById = async (req, res) => {
-    try {
-        const { customerId } = req.params;
-
-        const customer = await Customer.findById(customerId);
-        if (!customer) {
-            return res.status(404).json({ message: 'Customer not found' });
-        }
-
-        // Get customer address
-        const address = await CustomerAddress.findOne({ customerID: customerId });
-
-        res.json({
-            customer: {
-                _id: customer._id,
-                customerName: customer.customerName,
-                email: customer.email,
-                phone: customer.phone,
-                loyaltyPoints: customer.loyaltyPoints,
-                address: address ? address.address : null
-            }
-        });
-    } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+    // Check if email already exists
+    const existingCustomerByEmail = await Customer.findOne({ email });
+    if (existingCustomerByEmail) {
+      return res.status(400).json({ 
+        message: 'Customer with this email already exists. Use "Add Phone to Existing Customer" option.' 
+      });
     }
-};
 
-// Calculate loyalty points (1 point per 100 LKR)
-const calculateLoyaltyPoints = (totalAmount) => {
-    return Math.floor(totalAmount / 100);
-};
+    // Create new customer with loyalty card
+    const customer = new Customer({
+      customerName,
+      email,
+      phone,
+      loyaltyPoints: 0
+    });
 
-// Apply loyalty discount (1 point = 1 LKR discount)
-const applyLoyaltyDiscount = (totalAmount, pointsToRedeem) => {
-    const discount = pointsToRedeem;
-    const finalAmount = totalAmount - discount;
-    return {
-        discount,
-        finalAmount: finalAmount > 0 ? finalAmount : 0
-    };
+    const savedCustomer = await customer.save();
+
+    // Create address if provided
+    if (address && address.trim()) {
+      const customerAddress = new CustomerAddress({
+        customerID: savedCustomer._id,
+        address: address.trim()
+      });
+      await customerAddress.save();
+    }
+
+    res.status(201).json({
+      message: 'New customer and loyalty card created successfully',
+      customer: {
+        _id: savedCustomer._id,
+        customerName: savedCustomer.customerName,
+        email: savedCustomer.email,
+        phone: savedCustomer.phone,
+        loyaltyPoints: savedCustomer.loyaltyPoints
+      }
+    });
+  } catch (error) {
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({ message: messages.join(', ') });
+    }
+    
+    // Handle duplicate key errors
+    if (error.code === 11000) {
+      const duplicateField = Object.keys(error.keyPattern)[0];
+      if (duplicateField === 'phone') {
+        return res.status(400).json({ 
+          message: 'This phone number is already associated with another customer' 
+        });
+      }
+      return res.status(400).json({ 
+        message: 'Customer already exists' 
+      });
+    }
+
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
 };
 
 module.exports = {
-    checkCustomerByPhone,
-    createCustomer,
-    updateLoyaltyPoints,
-    getCustomerById,
-    calculateLoyaltyPoints,
-    applyLoyaltyDiscount
+  checkCustomerByPhone,
+  checkCustomerByEmail,
+  addPhoneToExistingCustomer,
+  createCustomer
 };
+ 

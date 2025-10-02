@@ -26,7 +26,10 @@ const CashierDashboard = () => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [customer, setCustomer] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showCreateOfferModal, setShowCreateOfferModal] = useState(false); // New state for offer modal
+  const [showCreateOfferModal, setShowCreateOfferModal] = useState(false);
+  const [showEmailCheckModal, setShowEmailCheckModal] = useState(false); // New state for email check
+  const [customerEmail, setCustomerEmail] = useState(""); // New state for email
+  const [existingCustomer, setExistingCustomer] = useState(null); // Existing customer without loyalty card
   const [loyaltyDiscount, setLoyaltyDiscount] = useState(0);
   const [pointsToRedeem, setPointsToRedeem] = useState(0);
   const [newCustomerData, setNewCustomerData] = useState({
@@ -194,102 +197,193 @@ const CashierDashboard = () => {
     }
   };
 
-  // Continue without loyalty card - show offer to create new card
-  const continueWithoutCard = () => {
-    setShowLoyaltyCheck(false);
-    setShowCreateOfferModal(true);
-  };
+  // Check customer by email
+  const checkCustomerByEmail = async () => {
+    if (!customerEmail.trim()) {
+      setError("Please enter an email address");
+      return;
+    }
 
-  // Decline creating loyalty card and proceed to payment
-  const declineCreateCard = () => {
-    setShowCreateOfferModal(false);
-    processPayment();
-  };
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `http://localhost:4000/api/customers/check-email?email=${encodeURIComponent(
+          customerEmail
+        )}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-  // Accept creating loyalty card
-  const acceptCreateCard = () => {
-    setShowCreateOfferModal(false);
-    setShowCreateModal(true);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.exists) {
+          if (data.hasLoyaltyCard) {
+            // Customer already has loyalty card
+            setError("This customer already has a loyalty card");
+            return;
+          } else {
+            // Customer exists but no loyalty card - add phone number
+            setExistingCustomer(data.customer);
+            setShowEmailCheckModal(false);
+            setShowCreateModal(true);
+          }
+        } else {
+          // Customer doesn't exist - create new customer with loyalty card
+          setExistingCustomer(null);
+          setShowEmailCheckModal(false);
+          setShowCreateModal(true);
+        }
+        setError("");
+      } else {
+        setError("Failed to check customer email");
+      }
+    } catch (error) {
+      setError("Network error. Please try again.");
+    }
   };
 
   const createLoyaltyCard = async () => {
     try {
       const token = localStorage.getItem("token");
 
-      // Validate required fields including phone number
-      if (!newCustomerData.customerName || !newCustomerData.email || !phoneNumber.trim()) {
-        setError("Please fill in all required fields including phone number");
+      // Validate required fields
+      if (!phoneNumber.trim()) {
+        setError("Phone number is required for loyalty card creation");
         return;
       }
 
-      // First create the customer
-      const customerResponse = await fetch("http://localhost:4000/api/customers", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...newCustomerData,
-          phone: phoneNumber.trim(),
-        }),
-      });
+      if (!customerEmail.trim()) {
+        setError("Email is required");
+        return;
+      }
 
-      const customerData = await customerResponse.json();
+      if (existingCustomer) {
+        // Add phone to existing customer for loyalty card
+        const response = await fetch("http://localhost:4000/api/customers/add-phone", {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: customerEmail.trim(),
+            phone: phoneNumber.trim(),
+          }),
+        });
 
-      if (customerResponse.ok) {
-        // Create loyalty transaction for card creation
-        const loyaltyResponse = await fetch("http://localhost:4000/api/loyalty", {
+        const data = await response.json();
+
+        if (response.ok) {
+          // Create loyalty transaction for card activation
+          const loyaltyResponse = await fetch("http://localhost:4000/api/loyalty", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              customerID: data.customer._id,
+              transactionType: 'CARD_CREATED',
+              pointsEarned: 0,
+              pointsRedeemed: 0
+            }),
+          });
+
+          if (loyaltyResponse.ok) {
+            const loyaltyData = await loyaltyResponse.json();
+            setCustomer(data.customer);
+            resetLoyaltyModals();
+
+            alert(`Loyalty card activated successfully for existing customer!
+                   Customer: ${data.customer.customerName}
+                   Email: ${data.customer.email}
+                   Phone: ${data.customer.phone}
+                   Transaction ID: ${loyaltyData.transaction.transactionID}`);
+          } else {
+            setError("Phone added but failed to create loyalty transaction");
+          }
+        } else {
+          setError(data.message || "Failed to add phone number to customer");
+        }
+      } else {
+        // Create new customer with loyalty card
+        if (!newCustomerData.customerName) {
+          setError("Please enter customer name for new customer");
+          return;
+        }
+
+        const customerResponse = await fetch("http://localhost:4000/api/customers", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            customerID: customerData.customer._id,
-            transactionType: 'CARD_CREATED',
-            pointsEarned: 0,
-            pointsRedeemed: 0
+            customerName: newCustomerData.customerName,
+            email: customerEmail.trim(),
+            phone: phoneNumber.trim(),
+            address: newCustomerData.address,
           }),
         });
 
-        if (loyaltyResponse.ok) {
-          const loyaltyData = await loyaltyResponse.json();
-          setCustomer(customerData.customer);
-          setShowCreateModal(false);
-          setNewCustomerData({
-            customerName: "",
-            email: "",
-            phone: "",
-            address: "",
+        const customerData = await customerResponse.json();
+
+        if (customerResponse.ok) {
+          // Create loyalty transaction for new card
+          const loyaltyResponse = await fetch("http://localhost:4000/api/loyalty", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              customerID: customerData.customer._id,
+              transactionType: 'CARD_CREATED',
+              pointsEarned: 0,
+              pointsRedeemed: 0
+            }),
           });
-          setPhoneNumber("");
-          setError("");
 
-          // Show success message and proceed to payment
-          alert(`Loyalty card created successfully! 
-                 Customer: ${customerData.customer.customerName}
-                 Phone: ${customerData.customer.phone}
-                 Transaction ID: ${loyaltyData.transaction.transactionID}
-                 
-                 You can now proceed with the payment.`);
+          if (loyaltyResponse.ok) {
+            const loyaltyData = await loyaltyResponse.json();
+            setCustomer(customerData.customer);
+            resetLoyaltyModals();
 
-          // Don't automatically process payment - let user proceed manually
-          // processPayment();
+            alert(`New customer and loyalty card created successfully!
+                   Customer: ${customerData.customer.customerName}
+                   Email: ${customerData.customer.email}
+                   Phone: ${customerData.customer.phone}
+                   Transaction ID: ${loyaltyData.transaction.transactionID}`);
+          } else {
+            setError("Customer created but failed to create loyalty transaction");
+          }
         } else {
-          setError("Customer created but failed to create loyalty transaction");
-        }
-      } else {
-        // Show specific error message
-        if (customerData.message.includes('phone number')) {
-          setError("A loyalty card already exists for this phone number. Please use the existing customer or check the phone number.");
-        } else {
-          setError(customerData.message || "Failed to create loyalty card");
+          setError(customerData.message || "Failed to create customer");
         }
       }
     } catch (error) {
       setError("Network error. Please try again.");
     }
+  };
+
+  const resetLoyaltyModals = () => {
+    setShowCreateModal(false);
+    setShowEmailCheckModal(false);
+    setShowCreateOfferModal(false);
+    setNewCustomerData({
+      customerName: "",
+      email: "",
+      phone: "",
+      address: "",
+    });
+    setCustomerEmail("");
+    setExistingCustomer(null);
+    setPhoneNumber("");
+    setError("");
   };
 
   const applyLoyaltyDiscount = () => {
@@ -387,11 +481,23 @@ const CashierDashboard = () => {
     }
   };
 
-  // Continue without loyalty card
-  // const continueWithoutCard = () => {
-  //   setShowLoyaltyCheck(false);
-  //   setShowCreateOfferModal(true);
-  // };
+  // Continue without loyalty card - show offer to create new card
+  const continueWithoutCard = () => {
+    setShowLoyaltyCheck(false);
+    setShowCreateOfferModal(true);
+  };
+
+  // Accept creating loyalty card - show email check modal
+  const acceptCreateCard = () => {
+    setShowCreateOfferModal(false);
+    setShowEmailCheckModal(true);
+  };
+
+  // Decline creating loyalty card and proceed to payment
+  const declineCreateCard = () => {
+    setShowCreateOfferModal(false);
+    processPayment();
+  };
 
   return (
     <div className="min-h-screen p-4 bg-gray-50">
@@ -830,7 +936,7 @@ const CashierDashboard = () => {
             <div className="w-full max-w-md p-6 bg-white rounded-lg">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-800">
-                  Create Loyalty Card
+                  {existingCustomer ? "Add Loyalty Card to Existing Customer" : "Create New Customer with Loyalty Card"}
                 </h3>
                 <button
                   onClick={() => setShowCreateModal(false)}
@@ -840,16 +946,33 @@ const CashierDashboard = () => {
                 </button>
               </div>
 
-              <div className="p-3 mb-4 border border-blue-200 rounded-lg bg-blue-50">
-                <p className="text-sm text-blue-800">
-                  <strong>Phone Number:</strong> {phoneNumber || "Not entered"}
-                </p>
-                <p className="mt-1 text-xs text-blue-600">
-                  Loyalty card will be created for this phone number
-                </p>
-              </div>
+              {existingCustomer && (
+                <div className="p-3 mb-4 border border-green-200 rounded-lg bg-green-50">
+                  <h4 className="font-medium text-green-800">Existing Customer Found:</h4>
+                  <p className="text-sm text-green-700">{existingCustomer.customerName}</p>
+                  <p className="text-sm text-green-700">{existingCustomer.email}</p>
+                  <p className="mt-1 text-xs text-green-600">Adding phone number to activate loyalty card</p>
+                </div>
+              )}
 
               <div className="space-y-4">
+                <div>
+                  <label className="block mb-2 text-sm font-medium text-gray-700">
+                    <Mail className="inline mr-1" size={16} />
+                    Email *
+                  </label>
+                  <input
+                    type="email"
+                    value={customerEmail}
+                    onChange={(e) => setCustomerEmail(e.target.value)}
+                    className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary1"
+                    placeholder="Customer email"
+                    disabled
+                    required
+                  />
+                  <p className="mt-1 text-xs text-gray-500">Email cannot be changed</p>
+                </div>
+
                 <div>
                   <label className="block mb-2 text-sm font-medium text-gray-700">
                     <Phone className="inline mr-1" size={16} />
@@ -860,83 +983,59 @@ const CashierDashboard = () => {
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary1"
-                    placeholder="Enter phone number"
+                    placeholder="Enter phone number for loyalty card"
                     required
                   />
                 </div>
 
-                <div>
-                  <label className="block mb-2 text-sm font-medium text-gray-700">
-                    <User className="inline mr-1" size={16} />
-                    Full Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={newCustomerData.customerName}
-                    onChange={(e) =>
-                      setNewCustomerData({
-                        ...newCustomerData,
-                        customerName: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary1"
-                    placeholder="Enter customer name"
-                    required
-                  />
-                </div>
+                {!existingCustomer && (
+                  <>
+                    <div>
+                      <label className="block mb-2 text-sm font-medium text-gray-700">
+                        <User className="inline mr-1" size={16} />
+                        Full Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={newCustomerData.customerName}
+                        onChange={(e) =>
+                          setNewCustomerData({
+                            ...newCustomerData,
+                            customerName: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary1"
+                        placeholder="Enter customer name"
+                        required
+                      />
+                    </div>
 
-                <div>
-                  <label className="block mb-2 text-sm font-medium text-gray-700">
-                    <Mail className="inline mr-1" size={16} />
-                    Email *
-                  </label>
-                  <input
-                    type="email"
-                    value={newCustomerData.email}
-                    onChange={(e) =>
-                      setNewCustomerData({
-                        ...newCustomerData,
-                        email: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary1"
-                    placeholder="Enter email address"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block mb-2 text-sm font-medium text-gray-700">
-                    <MapPin className="inline mr-1" size={16} />
-                    Address (Optional)
-                  </label>
-                  <textarea
-                    value={newCustomerData.address}
-                    onChange={(e) =>
-                      setNewCustomerData({
-                        ...newCustomerData,
-                        address: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary1"
-                    placeholder="Enter address"
-                    rows={3}
-                  />
-                </div>
-
-                {!phoneNumber.trim() && (
-                  <div className="p-3 border border-red-200 rounded-lg bg-red-50">
-                    <p className="text-sm text-red-700">
-                      ⚠️ Phone number is required for loyalty card creation
-                    </p>
-                  </div>
+                    <div>
+                      <label className="block mb-2 text-sm font-medium text-gray-700">
+                        <MapPin className="inline mr-1" size={16} />
+                        Address (Optional)
+                      </label>
+                      <textarea
+                        value={newCustomerData.address}
+                        onChange={(e) =>
+                          setNewCustomerData({
+                            ...newCustomerData,
+                            address: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary1"
+                        placeholder="Enter address"
+                        rows={3}
+                      />
+                    </div>
+                  </>
                 )}
 
                 <div className="flex space-x-3">
                   <button
                     onClick={() => {
                       setShowCreateModal(false);
-                      setShowCreateOfferModal(true);
+                      setShowEmailCheckModal(true);
                     }}
                     className="flex-1 px-4 py-2 text-gray-700 transition-colors bg-gray-200 rounded-lg hover:bg-gray-300"
                   >
@@ -944,10 +1043,78 @@ const CashierDashboard = () => {
                   </button>
                   <button
                     onClick={createLoyaltyCard}
-                    disabled={!phoneNumber.trim() || !newCustomerData.customerName || !newCustomerData.email}
+                    disabled={!phoneNumber.trim() || !customerEmail.trim() || (!existingCustomer && !newCustomerData.customerName)}
                     className="flex-1 px-4 py-2 text-white transition-colors rounded-lg bg-primary1 hover:bg-primary2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Create Loyalty Card
+                    {existingCustomer ? "Activate Loyalty Card" : "Create Customer & Card"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Email Check Modal - Add this modal that's missing */}
+        {showEmailCheckModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="w-full max-w-md p-6 bg-white rounded-lg">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Customer Email Check
+                </h3>
+                <button
+                  onClick={() => setShowEmailCheckModal(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <p className="mb-4 text-gray-600">
+                Enter customer's email to check if they exist in the system:
+              </p>
+
+              <div className="p-3 mb-4 border border-blue-200 rounded-lg bg-blue-50">
+                <p className="text-sm font-medium text-blue-800">Process:</p>
+                <ul className="mt-1 space-y-1 text-xs text-blue-700">
+                  <li>• If email exists but no phone: Add phone for loyalty card</li>
+                  <li>• If email doesn't exist: Create new customer with loyalty card</li>
+                  <li>• If email has loyalty card: Cannot proceed</li>
+                </ul>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block mb-2 text-sm font-medium text-gray-700">
+                    <Mail className="inline mr-1" size={16} />
+                    Customer Email *
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="Enter customer email"
+                    value={customerEmail}
+                    onChange={(e) => setCustomerEmail(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary1"
+                    required
+                  />
+                </div>
+
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => {
+                      setShowEmailCheckModal(false);
+                      setShowCreateOfferModal(true);
+                    }}
+                    className="flex-1 px-4 py-2 text-gray-700 transition-colors bg-gray-200 rounded-lg hover:bg-gray-300"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={checkCustomerByEmail}
+                    disabled={!customerEmail.trim()}
+                    className="flex-1 px-4 py-2 text-white transition-colors rounded-lg bg-primary1 hover:bg-primary2 disabled:opacity-50"
+                  >
+                    Check Email
                   </button>
                 </div>
               </div>
