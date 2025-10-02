@@ -32,7 +32,7 @@ const createOrder = async (req, res) => {
         });
     } catch (error) {
         console.error('Order creation error:', error);
-        
+
         if (error.code === 11000) {
             // Log the exact duplicate key error
             console.error('Duplicate key error details:', error.keyPattern, error.keyValue);
@@ -41,7 +41,7 @@ const createOrder = async (req, res) => {
                 error: `Duplicate key on field: ${Object.keys(error.keyPattern || {})[0]}`
             });
         }
-        
+
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };

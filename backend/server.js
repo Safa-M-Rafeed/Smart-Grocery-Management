@@ -14,12 +14,12 @@ const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI);
     console.log('MongoDB connected');
-    
+
     // Clean up problematic indexes
     try {
       const db = mongoose.connection.db;
       const collections = await db.listCollections().toArray();
-      
+
       // Check if orders collection exists
       const ordersCollection = collections.find(col => col.name === 'orders');
       if (ordersCollection) {
@@ -35,7 +35,7 @@ const connectDB = async () => {
     } catch (cleanupError) {
       console.log('Index cleanup completed');
     }
-    
+
   } catch (error) {
     console.error('MongoDB connection error:', error);
     process.exit(1);
