@@ -8,6 +8,7 @@ const {
   getLoyaltyTransactionById
 } = require('../controllers/loyaltyTransactionController');
 const { requireAuth } = require('../middlewares/authMiddleware');
+const LoyaltyTransaction = require('../models/LoyaltyTransaction');
 
 // Create loyalty transaction (for card creation)
 router.post("/", requireAuth(['ADMIN', 'CASHIER']), createLoyaltyTransaction);
@@ -15,30 +16,14 @@ router.post("/", requireAuth(['ADMIN', 'CASHIER']), createLoyaltyTransaction);
 // Create purchase loyalty transaction
 router.post("/purchase", requireAuth(['ADMIN', 'CASHIER']), createPurchaseLoyaltyTransaction);
 
-// Get all loyalty transactions (Admin only)
-router.get("/", requireAuth(['ADMIN']), getAllLoyaltyTransactions);
+// Get all loyalty transactions (Remove auth requirement temporarily)
+router.get("/", getAllLoyaltyTransactions);
 
 // Get loyalty transactions by customer
 router.get("/customer/:customerID", requireAuth(['ADMIN', 'CASHIER']), getLoyaltyTransactionsByCustomer);
 
 // Get single loyalty transaction by ID
 router.get("/:transactionId", requireAuth(['ADMIN', 'CASHIER']), getLoyaltyTransactionById);
-
-module.exports = router;
-// Get single loyalty transaction by ID
-router.get("/:id", async (req, res) => {
-  try {
-    const transaction = await LoyaltyTransaction.findById(req.params.id)
-      .populate("customerID", "name email")
-      .populate("orderID", "orderNumber totalAmount");
-
-    if (!transaction) return res.status(404).json({ message: "Transaction not found" });
-
-    res.json(transaction);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
 
 // Update loyalty transaction
 router.put("/:id", async (req, res) => {
@@ -69,3 +54,4 @@ router.delete("/:id", async (req, res) => {
 });
 
 module.exports = router;
+

@@ -5,6 +5,8 @@ import Login from "./Auth/Login";
 import Register from "./Auth/Register";
 import CashierDashboard from "./pages/CashierDashbaord";
 import OrderPayment from "./pages/OrderPayment";
+import SalesBilling from "./pages/SalesBilling";
+import LoanLoyaltyManagement from "./pages/LoanLoyaltyManagement";
 
 function App() {
   return (
@@ -17,6 +19,11 @@ function App() {
           <Route path="/contact" element={<div>Contact Page</div>} />
           <Route path="/shop" element={<CashierDashboard />} />
           <Route path="/order-payment" element={<OrderPayment />} />
+          <Route path="/sales-billing" element={<SalesBilling />} />
+          <Route
+            path="/loan-loyalty-management"
+            element={<LoanLoyaltyManagement />}
+          />
         </Route>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
