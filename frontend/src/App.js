@@ -6,6 +6,7 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* All routes wrapped inside Layout */}
         <Route element={<Layout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/about" element={<div>About Page</div>} />
