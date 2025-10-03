@@ -1,32 +1,24 @@
+// backend/models/User.js
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
-// Define the User Schema
 const userSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-  },
-  email: {
-    type: String,
-    required: true,
-    unique: true, // Email must be unique
-  },
-  passwordHash: {
-    type: String,
-    required: true, // Store the hashed password
-  },
-  role: {
-    type: String,
-    enum: ['ADMIN', 'CASHIER', 'INVENTORY_CLERK', 'DELIVERY_STAFF', 'LOAN_OFFICER'],
-    default: 'CASHIER', // Default role for users
-  },
-  active: {
-    type: Boolean,
-    default: true, // By default, users are active
-  },
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  role: { type: String, default: 'customer', enum: ['customer'] }
 }, { timestamps: true });
 
-// Create the User model
-const User = mongoose.model('User', userSchema);
+// Hash password before saving
+userSchema.pre('save', async function(next) {
+  if (!this.isModified('password')) return next();
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
+});
 
-module.exports = User;
+// Compare password for login
+userSchema.methods.comparePassword = async function(password) {
+  return await bcrypt.compare(password, this.password);
+};
+
+module.exports = mongoose.model('User', userSchema);
