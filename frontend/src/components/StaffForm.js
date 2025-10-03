@@ -1,135 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 
-const StaffForm = () => {
+const StaffForm = ({ refresh, editStaff, setEditStaff }) => {
   const [form, setForm] = useState({
-    staffName: '',
-    email: '',
-    role: '',
-    salary: '',
-    contactNo: '',
-    status: 'Active',
-    address: '',
+    staffName: "", email: "", role: "", salary: "", contactNo: "", address: "", password: ""
   });
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  const token = localStorage.getItem("token");
+
+  useEffect(() => {
+    if (editStaff) setForm({ ...editStaff, password: "" });
+  }, [editStaff]);
+
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:4000/api/staff', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-      if (response.ok) {
-        alert('Staff details saved!');
-        setForm({
-          staffName: '',
-          email: '',
-          role: '',
-          salary: '',
-          contactNo: '',
-          status: 'Active',
-          address: '',
+      if (editStaff) {
+        await axios.put(`/api/staff/${editStaff._id}`, form, {
+          headers: { Authorization: `Bearer ${token}` }
         });
       } else {
-        alert('Error saving staff details');
+        await axios.post("/api/staff", form, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
       }
-    } catch (err) {
-      alert('Network error');
-    }
+      setForm({ staffName: "", email: "", role: "", salary: "", contactNo: "", address: "", password: "" });
+      setEditStaff(null);
+      refresh();
+    } catch (err) { console.error(err); }
   };
 
   return (
     <form onSubmit={handleSubmit}>
-      <h2>Staff Account Management</h2>
-
-      <label>
-        Name:
-        <input
-          type="text"
-          name="staffName"
-          value={form.staffName}
-          onChange={handleChange}
-          required
-        />
-      </label>
-      <br />
-
-      <label>
-        Email:
-        <input
-          type="email"
-          name="email"
-          value={form.email}
-          onChange={handleChange}
-          required
-        />
-      </label>
-      <br />
-
-      <label>
-        Role:
-        <input
-          type="text"
-          name="role"
-          value={form.role}
-          onChange={handleChange}
-          required
-        />
-      </label>
-      <br />
-
-      <label>
-        Salary:
-        <input
-          type="number"
-          name="salary"
-          value={form.salary}
-          onChange={handleChange}
-          min="0"
-          required
-        />
-      </label>
-      <br />
-
-      <label>
-        Contact No:
-        <input
-          type="text"
-          name="contactNo"
-          value={form.contactNo}
-          onChange={handleChange}
-          pattern="\d{10}"
-          title="Enter 10-digit contact number"
-          required
-        />
-      </label>
-      <br />
-
-      <label>
-        Address:
-        <input
-          type="text"
-          name="address"
-          value={form.address}
-          onChange={handleChange}
-        />
-      </label>
-      <br />
-
-      <label>
-        Status:
-        <select name="status" value={form.status} onChange={handleChange}>
-          <option value="Active">Active</option>
-          <option value="Inactive">Inactive</option>
-        </select>
-      </label>
-      <br />
-
-      <button type="submit">Submit</button>
+      <input name="staffName" placeholder="Full Name" value={form.staffName} onChange={handleChange} required />
+      <input name="email" placeholder="Email" value={form.email} onChange={handleChange} required />
+      <input name="role" placeholder="Role" value={form.role} onChange={handleChange} required />
+      <input name="salary" type="number" placeholder="Salary" value={form.salary} onChange={handleChange} />
+      <input name="contactNo" placeholder="Contact No" value={form.contactNo} onChange={handleChange} required />
+      <input name="address" placeholder="Address" value={form.address} onChange={handleChange} />
+      <input name="password" placeholder="Password" value={form.password} onChange={handleChange} />
+      <button type="submit">{editStaff ? "Update Staff" : "Add Staff"}</button>
+      {editStaff && <button onClick={() => setEditStaff(null)}>Cancel</button>}
     </form>
   );
 };

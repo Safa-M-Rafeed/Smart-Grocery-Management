@@ -1,4 +1,5 @@
 import React from "react";
+import { FaCheckCircle } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import img2 from "../assets/img2.jpg"; // adjust path if your folder is different
 import img1 from "../assets/img1.jpg";
@@ -45,82 +46,168 @@ const HomePage = () => {
         </div>
       </section>
 
-  {/* About Section */}
-<section className="py-20 bg-white">
-  <div className="container mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
+        {/* About Section */}
+      <section className="py-20 bg-white">
+        <div className="container mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
 
-    {/* Left Text */}
-    <div className="space-y-6">
-      <h2 className="text-4xl font-bold text-[#537D5D] leading-tight">
-        SmartGrocery – The Smarter Way to Manage Your Store
-      </h2>
-      <p className="text-gray-700 text-lg md:text-xl">
-        SmartGrocery is a professional grocery management platform designed to streamline operations for customers, staff, and business owners. 
-        From inventory tracking and sales processing to delivery management and loyalty programs, everything is integrated for efficiency and growth.
-      </p>
-      <Link
-        to="/features"
-        className="inline-block mt-4 bg-[#D2D0A0] text-[#537D5D] px-6 py-3 rounded-lg font-semibold hover:bg-[#9EBC8A] transition shadow-md"
-      >
-        Explore Features
-      </Link>
-    </div>
+          {/* Left Text */}
+          <div className="space-y-6">
+            <h2 className="text-4xl font-bold text-[#537D5D] leading-tight">
+              SmartGrocery – The Smarter Way to Manage Your Store
+            </h2>
+            <p className="text-gray-700 text-lg md:text-xl">
+              SmartGrocery is a professional grocery management platform designed to streamline operations for customers, staff, and business owners. 
+              From inventory tracking and sales processing to delivery management and loyalty programs, everything is integrated for efficiency and growth.
+            </p>
+            <Link
+              to="/features"
+              className="inline-block mt-4 bg-[#D2D0A0] text-[#537D5D] px-6 py-3 rounded-lg font-semibold hover:bg-[#9EBC8A] transition shadow-md"
+            >
+              Explore Features
+            </Link>
+          </div>
 
-    {/* Right Image */}
-    <div className="flex justify-center relative">
-      <img
-        src={img1} // your image
-        alt="About SmartGrocery"
-        className="w-full md:w-[450px] rounded-2xl shadow-2xl object-cover transition-transform duration-500 hover:scale-105"
-      />
-      <div className="absolute inset-0 bg-[#9EBC8A]/10 rounded-2xl"></div> {/* subtle overlay */}
-    </div>
+          {/* Right Image */}
+          <div className="flex justify-center relative">
+            <img
+              src={img1} // your image
+              alt="About SmartGrocery"
+              className="w-full md:w-[450px] rounded-2xl shadow-2xl object-cover transition-transform duration-500 hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-[#9EBC8A]/10 rounded-2xl"></div> {/* subtle overlay */}
+          </div>
 
-  </div>
-</section>
+        </div>
+      </section>
 
 
 
-      {/* Core Features Section */}
-      <section className="py-20 bg-[#F9FAF9]">
-        <div className="container mx-auto px-6">
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-[#537D5D]">Our Core Features</h2>
-          <div className="mt-12 grid md:grid-cols-2 gap-12">
-            {[
-              { title: "Staff Management", text: "Manage staff efficiently with role-based dashboards and attendance tracking." },
-              { title: "Sales & Billing", text: "Process sales quickly with accurate billing and invoicing." },
-              { title: "Inventory Management", text: "Keep track of stock levels in real-time and avoid shortages." },
-              { title: "Delivery Tracking", text: "Monitor deliveries and ensure timely fulfillment." },
-              { title: "Loan & Loyalty", text: "Offer loans and loyalty rewards to increase customer retention." },
-              { title: "Secure Payments", text: "Process transactions safely with encrypted payments." },
-            ].map((feature, i) => (
-              <div key={i} className={`flex flex-col md:flex-row items-center md:space-x-6 p-6 bg-white rounded-xl shadow-lg hover:shadow-2xl transition ${i % 2 === 1 ? "md:flex-row-reverse" : ""}`}>
-                <div className="text-4xl md:text-5xl mb-4 md:mb-0">⭐</div>
-                <div>
-                  <h3 className="text-xl font-semibold text-[#73946B]">{feature.title}</h3>
-                  <p className="mt-2 text-gray-700">{feature.text}</p>
-                </div>
-              </div>
-            ))}
+            {/* Core Features Section */}
+      <section className="py-20 bg-[#F8F9FA]">
+        <div className="container mx-auto px-6 text-center">
+          <h2 className="text-4xl font-bold text-[#537D5D] mb-12">
+            Our Core Features
+          </h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
+            
+            {/* Feature 1 */}
+            <div className="bg-white p-8 rounded-2xl shadow-md hover:shadow-xl transition duration-300">
+              <img
+                src={require("../assets/Feature1.jpg")}
+                alt="Feature 1"
+                className="w-20 h-20 mx-auto mb-6 object-contain"
+              />
+              <h3 className="text-xl font-semibold text-[#537D5D] mb-3">
+                Smart Inventory
+              </h3>
+              <p className="text-gray-600">
+                Keep real-time track of stock with automated low-stock alerts.
+              </p>
+            </div>
+
+            {/* Feature 2 */}
+            <div className="bg-white p-8 rounded-2xl shadow-md hover:shadow-xl transition duration-300">
+              <img
+                src={require("../assets/Feature2.jpg")}
+                alt="Feature 2"
+                className="w-20 h-20 mx-auto mb-6 object-contain"
+              />
+              <h3 className="text-xl font-semibold text-[#537D5D] mb-3">
+                Sales Analytics
+              </h3>
+              <p className="text-gray-600">
+                Get detailed insights and reports to make data-driven decisions.
+              </p>
+            </div>
+
+            {/* Feature 3 */}
+            <div className="bg-white p-8 rounded-2xl shadow-md hover:shadow-xl transition duration-300">
+              <img
+                src={require("../assets/Feature3.jpg")}
+                alt="Feature 3"
+                className="w-20 h-20 mx-auto mb-6 object-contain"
+              />
+              <h3 className="text-xl font-semibold text-[#537D5D] mb-3">
+                Customer Loyalty
+              </h3>
+              <p className="text-gray-600">
+                Reward your regular customers with loyalty points and discounts.
+              </p>
+            </div>
+
+            {/* Feature 4 */}
+            <div className="bg-white p-8 rounded-2xl shadow-md hover:shadow-xl transition duration-300">
+              <img
+                src={require("../assets/Feature4.jpg")}
+                alt="Feature 4"
+                className="w-20 h-20 mx-auto mb-6 object-contain"
+              />
+              <h3 className="text-xl font-semibold text-[#537D5D] mb-3">
+                Delivery Tracking
+              </h3>
+              <p className="text-gray-600">
+                Manage and track orders with integrated delivery support.
+              </p>
+            </div>
+
+            {/* Feature 5 */}
+            <div className="bg-white p-8 rounded-2xl shadow-md hover:shadow-xl transition duration-300">
+              <img
+                src={require("../assets/Feature5.jpg")}
+                alt="Feature 5"
+                className="w-20 h-20 mx-auto mb-6 object-contain"
+              />
+              <h3 className="text-xl font-semibold text-[#537D5D] mb-3">
+                Staff Management
+              </h3>
+              <p className="text-gray-600">
+                Track attendance, performance, and roles of your staff easily.
+              </p>
+            </div>
+
+            {/* Feature 6 */}
+            <div className="bg-white p-8 rounded-2xl shadow-md hover:shadow-xl transition duration-300">
+              <img
+                src={require("../assets/Feature6.jpg")}
+                alt="Feature 6"
+                className="w-20 h-20 mx-auto mb-6 object-contain"
+              />
+              <h3 className="text-xl font-semibold text-[#537D5D] mb-3">
+                Multi-Platform Access
+              </h3>
+              <p className="text-gray-600">
+                Access SmartGrocery from desktop, tablet, or mobile seamlessly.
+              </p>
+            </div>
+
           </div>
         </div>
       </section>
 
-      {/* Why Choose Us Section */}
-      <section className="py-20 bg-[#9EBC8A]/20">
+
+            {/* Core Features Section */}
+      <section className="py-20 bg-[#F8F9FA]">
         <div className="container mx-auto px-6 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-[#537D5D] mb-8">Why Choose SmartGrocery?</h2>
-          <div className="max-w-3xl mx-auto grid md:grid-cols-2 gap-6 text-left">
+          <h2 className="text-4xl font-bold text-[#537D5D] mb-12">
+            Our Core Features
+          </h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
             {[
-              "24/7 Online Shopping",
-              "Role-based Dashboards",
-              "Secure Payments",
-              "Real-time Inventory",
-              "Smooth Delivery",
-            ].map((point, i) => (
-              <div key={i} className="flex items-center space-x-3">
-                <span className="text-[#73946B] text-2xl">✔️</span>
-                <p className="text-gray-700 font-medium">{point}</p>
+              "User-friendly Interface",
+              "Real-time Inventory Tracking",
+              "Secure Payment Integration",
+              "Role-based Access Control",
+              "Sales & Expense Reports",
+              "Multi-device Compatibility",
+            ].map((feature, i) => (
+              <div
+                key={i}
+                className="flex items-center space-x-4 p-6 bg-white rounded-2xl shadow-md hover:shadow-xl transition"
+              >
+                <FaCheckCircle className="text-[#9EBC8A] text-3xl" />
+                <span className="text-[#537D5D] font-semibold text-lg">{feature}</span>
               </div>
             ))}
           </div>
