@@ -1,3 +1,4 @@
+import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
 import HomePage from "./pages/HomePage";
@@ -7,14 +8,17 @@ import StaffDashboard from "./pages/StaffDashboard";
 import AdminStaff from "./pages/AdminStaff";
 import Unauthorized from "./pages/Unauthorized";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { ToastContainer } from "react-toastify";
+import StaffForm from "./components/StaffForm";
+import StaffSearch from "./components/StaffSearch";
+import StaffList from "./components/StaffList";
 
 function App() {
   return (
     <Router>
       <Routes>
-        <Route element={<Layout />}>
-          {/* Public Pages */}
-          <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<Layout />}>
+          <Route index element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
@@ -40,6 +44,11 @@ function App() {
           />
         </Route>
       </Routes>
+
+      {/* Optional inline components */}
+      <StaffForm />
+      <StaffSearch />
+      <StaffList />
     </Router>
   );
 }
