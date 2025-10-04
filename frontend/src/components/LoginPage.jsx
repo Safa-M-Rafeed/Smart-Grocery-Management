@@ -25,10 +25,15 @@ const LoginPage = () => {
       // Save JWT token
       localStorage.setItem("token", data.token);
 
-      // Redirect based on role
+      // Save role
+      localStorage.setItem("role", data.role);
+
+      // Set subsystem based on role
       if (data.role === "Admin") {
+        localStorage.setItem("subsystem", "staff"); // Admin goes to staff management
         navigate("/staff-dashboard");
       } else {
+        localStorage.removeItem("subsystem"); // regular users see default nav
         navigate("/user-dashboard");
       }
     } catch (err) {

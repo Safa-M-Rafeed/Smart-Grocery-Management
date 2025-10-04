@@ -1,3 +1,4 @@
+// backend/controllers/staffController.js
 const Staff = require("../models/Staff");
 const jwt = require("jsonwebtoken");
 
@@ -17,7 +18,7 @@ const rolePermissions = {
 exports.createStaff = async (req, res) => {
   try {
     const { staffName, email, role, salary, contactNo, address, password } = req.body;
-    if (!staffName || !email || !role || !password || !contactNo) 
+    if (!staffName || !email || !role || !password || !contactNo)
       return res.status(400).json({ message: "Please fill all required fields" });
 
     const existingStaff = await Staff.findOne({ email });
@@ -33,7 +34,7 @@ exports.createStaff = async (req, res) => {
       salary: salary || 0,
       contactNo,
       address: address || "",
-      password,
+      password, // plaintext for now (you asked to leave hashing aside)
       status: "Active"
     });
 
@@ -87,6 +88,18 @@ exports.toggleStaffStatus = async (req, res) => {
     const staffSafe = staff.toObject();
     delete staffSafe.password;
     res.status(200).json({ message: `✅ Staff status changed to ${staff.status}`, staff: staffSafe });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// DELETE (optional)
+exports.deleteStaff = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const removed = await Staff.findByIdAndDelete(id);
+    if (!removed) return res.status(404).json({ message: "Staff not found" });
+    res.status(200).json({ message: "Staff removed" });
   } catch (err) {
     res.status(500).json({ message: "Server error" });
   }

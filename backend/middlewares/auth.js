@@ -1,4 +1,6 @@
+// backend/middlewares/auth.js
 const jwt = require("jsonwebtoken");
+const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_here";
 
 const verifyToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -8,7 +10,7 @@ const verifyToken = (req, res, next) => {
   if (!token) return res.status(401).json({ message: "No token provided" });
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "your_jwt_secret_here");
+    const decoded = jwt.verify(token, JWT_SECRET);
     req.user = decoded;
     next();
   } catch (err) {
@@ -18,7 +20,7 @@ const verifyToken = (req, res, next) => {
 
 const verifyAdmin = (req, res, next) => {
   verifyToken(req, res, () => {
-    if (req.user.role !== "Admin") {
+    if (!req.user || req.user.role !== "Admin") {
       return res.status(403).json({ message: "Access denied: Admins only" });
     }
     next();

@@ -1,15 +1,19 @@
-// frontend/src/pages/StaffDashboard.jsx
 import React, { useEffect, useState } from "react";
 
-const roles = ["Admin", "Cashier", "Inventory Clerk", "Loan Officer", "Delivery Person"];
+const roleColors = {
+  Admin: "bg-red-200 text-red-800",
+  Cashier: "bg-blue-200 text-blue-800",
+  "Inventory Clerk": "bg-yellow-200 text-yellow-800",
+  "Loan Officer": "bg-purple-200 text-purple-800",
+  "Delivery Person": "bg-green-200 text-green-800",
+};
 
 const StaffDashboard = () => {
-  const [staffList, setStaffList] = useState([]);
+  const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [showModal, setShowModal] = useState(false);
-  const [showConfirm, setShowConfirm] = useState({ visible: false, staffId: null, action: "" });
-  const [searchTerm, setSearchTerm] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editStaff, setEditStaff] = useState(null);
   const [formData, setFormData] = useState({
     staffName: "",
     email: "",
@@ -19,21 +23,21 @@ const StaffDashboard = () => {
     address: "",
     password: "",
   });
-  const [editingStaffId, setEditingStaffId] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const token = localStorage.getItem("token");
 
   const fetchStaff = async () => {
+    setLoading(true);
     try {
-      const res = await fetch(`http://localhost:4000/api/staffs?page=1&limit=100`, {
+      const res = await fetch("http://localhost:4000/api/staffs/all", {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (!res.ok) throw new Error("Failed to fetch staff");
       const data = await res.json();
-      if (res.ok) setStaffList(Array.isArray(data.staff) ? data.staff : []);
-      else setError(data.message || "Failed to fetch staff list");
+      setStaff(data);
     } catch (err) {
-      console.error(err);
-      setError("Failed to fetch staff list");
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -43,213 +47,289 @@ const StaffDashboard = () => {
     fetchStaff();
   }, []);
 
-  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (e) =>
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  const handleOpenModal = (staff = null) => {
+    if (staff) {
+      setEditStaff(staff);
+      setFormData({
+        staffName: staff.staffName,
+        email: staff.email,
+        role: staff.role,
+        salary: staff.salary,
+        contactNo: staff.contactNo,
+        address: staff.address,
+        password: "",
+      });
+    } else {
+      setEditStaff(null);
+      setFormData({
+        staffName: "",
+        email: "",
+        role: "",
+        salary: "",
+        contactNo: "",
+        address: "",
+        password: "",
+      });
+    }
+    setModalOpen(true);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const url = editingStaffId
-        ? `http://localhost:4000/api/staffs/${editingStaffId}`
+      const url = editStaff
+        ? `http://localhost:4000/api/staffs/${editStaff._id}`
         : "http://localhost:4000/api/staffs";
-      const method = editingStaffId ? "PUT" : "POST";
-
+      const method = editStaff ? "PUT" : "POST";
       const res = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify(formData),
       });
+      if (!res.ok) throw new Error("Failed to save staff");
+      fetchStaff();
+      setModalOpen(false);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed");
-
-      setFormData({ staffName: "", email: "", role: "", salary: "", contactNo: "", address: "", password: "" });
-      setEditingStaffId(null);
-      setShowModal(false);
+  const handleToggleStatus = async (staff) => {
+    try {
+      const res = await fetch(
+        `http://localhost:4000/api/staffs/${staff._id}/status`,
+        {
+          method: "PATCH",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      if (!res.ok) throw new Error("Failed to toggle status");
       fetchStaff();
     } catch (err) {
       alert(err.message);
     }
   };
 
-  const handleEdit = (staff) => {
-    setEditingStaffId(staff._id);
-    setFormData({
-      staffName: staff.staffName,
-      email: staff.email,
-      role: staff.role,
-      salary: staff.salary,
-      contactNo: staff.contactNo,
-      address: staff.address,
-      password: "",
-    });
-    setShowModal(true);
-  };
-
-  const handleConfirmAction = (staffId, action) => {
-    setShowConfirm({ visible: true, staffId, action });
-  };
-
-  const executeAction = async () => {
-    const { staffId, action } = showConfirm;
+  const handleDeleteStaff = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this staff?")) return;
     try {
-      let url = `http://localhost:4000/api/staffs/${staffId}`;
-      let method = "";
-
-      if (action === "delete") method = "DELETE";
-      else if (action === "toggle") {
-        method = "PATCH";
-        url += "/status";
-      }
-
-      const res = await fetch(url, {
-        method,
+      const res = await fetch(`http://localhost:4000/api/staffs/${id}`, {
+        method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Action failed");
-
+      if (!res.ok) throw new Error("Failed to delete staff");
       fetchStaff();
     } catch (err) {
       alert(err.message);
-    } finally {
-      setShowConfirm({ visible: false, staffId: null, action: "" });
     }
   };
 
-  const filteredStaff = staffList.filter(
-    (staff) =>
-      staff.staffName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      staff.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      staff.role.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredStaff = staff.filter(
+    (s) =>
+      s.staffName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.role.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (loading) return <p className="p-8 text-center text-lg">Loading...</p>;
+  const totalStaff = staff.length;
+  const activeStaff = staff.filter((s) => s.status === "Active").length;
+  const inactiveStaff = staff.filter((s) => s.status === "Inactive").length;
+
+  if (loading) return <p className="p-4">Loading staff...</p>;
+  if (error) return <p className="p-4 text-red-500">{error}</p>;
 
   return (
-    <div className="p-8">
-      {/* Header + Add Staff Button */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 space-y-4 md:space-y-0">
-        <h2 className="text-3xl font-bold text-[#537D5D]">Staff Dashboard</h2>
-        <div className="flex flex-col md:flex-row md:items-center gap-4 w-full md:w-auto">
+    <div className="p-6">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-blue-100 p-4 rounded shadow text-center">
+          <p className="text-gray-600">Total Staff</p>
+          <p className="text-2xl font-bold">{totalStaff}</p>
+        </div>
+        <div className="bg-green-100 p-4 rounded shadow text-center">
+          <p className="text-gray-600">Active Staff</p>
+          <p className="text-2xl font-bold">{activeStaff}</p>
+        </div>
+        <div className="bg-red-100 p-4 rounded shadow text-center">
+          <p className="text-gray-600">Inactive Staff</p>
+          <p className="text-2xl font-bold">{inactiveStaff}</p>
+        </div>
+      </div>
+
+      {/* Header + Search + Add */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-2">
+        <h2 className="text-2xl font-bold">Staff Dashboard</h2>
+        <div className="flex gap-2 flex-wrap">
           <input
             type="text"
-            placeholder="Search by name, email, or role..."
+            placeholder="Search by name, email, role"
+            className="border rounded px-3 py-1 focus:outline-none focus:ring focus:border-blue-300"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="p-2 border rounded flex-grow"
           />
           <button
-            onClick={() => { setShowModal(true); setEditingStaffId(null); }}
-            className="bg-[#537D5D] text-white px-4 py-2 rounded hover:bg-[#73946B] transition"
+            onClick={() => handleOpenModal()}
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
           >
-            Add Staff
+            + Add Staff
           </button>
         </div>
       </div>
 
       {/* Staff Table */}
-      <div className="overflow-x-auto bg-white rounded shadow-md">
-        <table className="min-w-full">
-          <thead className="bg-[#537D5D] text-white">
+      <table className="min-w-full bg-white border rounded shadow">
+        <thead className="bg-gray-100">
+          <tr>
+            <th className="py-2 px-4 border-b">Name</th>
+            <th className="py-2 px-4 border-b">Email</th>
+            <th className="py-2 px-4 border-b">Role</th>
+            <th className="py-2 px-4 border-b">Contact</th>
+            <th className="py-2 px-4 border-b">Status</th>
+            <th className="py-2 px-4 border-b">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredStaff.length === 0 ? (
             <tr>
-              <th className="py-3 px-4">Name</th>
-              <th className="py-3 px-4">Email</th>
-              <th className="py-3 px-4">Role</th>
-              <th className="py-3 px-4">Salary</th>
-              <th className="py-3 px-4">Contact</th>
-              <th className="py-3 px-4">Status</th>
-              <th className="py-3 px-4">Actions</th>
+              <td colSpan="6" className="text-center py-4">
+                No staff found
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {filteredStaff.map((staff) => (
-              <tr key={staff._id} className="border-b hover:bg-gray-50">
-                <td className="py-2 px-4">{staff.staffName}</td>
-                <td className="py-2 px-4">{staff.email}</td>
-                <td className="py-2 px-4">{staff.role}</td>
-                <td className="py-2 px-4">{staff.salary}</td>
-                <td className="py-2 px-4">{staff.contactNo}</td>
-                <td className="py-2 px-4">
+          ) : (
+            filteredStaff.map((s) => (
+              <tr key={s._id} className="text-center">
+                <td className="py-2 px-4 border-b">{s.staffName}</td>
+                <td className="py-2 px-4 border-b">{s.email}</td>
+                <td className="py-2 px-4 border-b">
                   <span
-                    className={`px-2 py-1 rounded ${
-                      staff.status === "Active" ? "bg-[#9EBC8A] text-white" : "bg-[#EB5757] text-white"
+                    className={`px-2 py-1 rounded text-sm font-semibold ${
+                      roleColors[s.role] || "bg-gray-200 text-gray-800"
                     }`}
                   >
-                    {staff.status}
+                    {s.role}
                   </span>
                 </td>
-                <td className="py-2 px-4 flex space-x-2">
+                <td className="py-2 px-4 border-b">{s.contactNo}</td>
+                <td className="py-2 px-4 border-b">
                   <button
-                    onClick={() => handleEdit(staff)}
-                    className="bg-[#73946B] px-2 py-1 rounded text-white hover:bg-[#537D5D] transition"
+                    onClick={() => handleToggleStatus(s)}
+                    className={`px-3 py-1 rounded text-white font-semibold transition ${
+                      s.status === "Active"
+                        ? "bg-green-500 hover:bg-green-600"
+                        : "bg-red-500 hover:bg-red-600"
+                    }`}
+                  >
+                    {s.status}
+                  </button>
+                </td>
+                <td className="py-2 px-4 border-b flex justify-center gap-2">
+                  <button
+                    onClick={() => handleOpenModal(s)}
+                    className="bg-yellow-400 px-2 py-1 rounded hover:bg-yellow-500 transition"
                   >
                     Edit
                   </button>
                   <button
-                    onClick={() => handleConfirmAction(staff._id, "toggle")}
-                    className={`px-2 py-1 rounded text-white ${
-                      staff.status === "Active" ? "bg-[#EB5757] hover:bg-[#D2D0A0]" : "bg-[#9EBC8A] hover:bg-[#537D5D]"
-                    } transition`}
-                  >
-                    {staff.status === "Active" ? "Deactivate" : "Activate"}
-                  </button>
-                  <button
-                    onClick={() => handleConfirmAction(staff._id, "delete")}
-                    className="bg-[#EB5757] px-2 py-1 rounded text-white hover:bg-[#D2D0A0] transition"
+                    onClick={() => handleDeleteStaff(s._id)}
+                    className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 transition"
                   >
                     Delete
                   </button>
                 </td>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            ))
+          )}
+        </tbody>
+      </table>
 
-      {error && <p className="text-red-500 mt-4">{error}</p>}
-
-      {/* Add/Edit Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl relative">
-            <button
-              className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
-              onClick={() => setShowModal(false)}
-            >
-              ✖
-            </button>
-            <h3 className="text-xl font-bold mb-4">{editingStaffId ? "Edit Staff" : "Add Staff"}</h3>
-            <form className="grid grid-cols-1 md:grid-cols-2 gap-4" onSubmit={handleSubmit}>
-              <input type="text" name="staffName" placeholder="Full Name" value={formData.staffName} onChange={handleChange} className="p-2 border rounded" required />
-              <input type="email" name="email" placeholder="Email" value={formData.email} onChange={handleChange} className="p-2 border rounded" required />
-              <select name="role" value={formData.role} onChange={handleChange} className="p-2 border rounded" required>
-                <option value="">Select Role</option>
-                {roles.map((role) => <option key={role} value={role}>{role}</option>)}
-              </select>
-              <input type="number" name="salary" placeholder="Salary" value={formData.salary} onChange={handleChange} className="p-2 border rounded" required />
-              <input type="text" name="contactNo" placeholder="Contact Number" value={formData.contactNo} onChange={handleChange} className="p-2 border rounded" required />
-              <input type="text" name="address" placeholder="Address" value={formData.address} onChange={handleChange} className="p-2 border rounded" />
-              {!editingStaffId && <input type="password" name="password" placeholder="Password" value={formData.password} onChange={handleChange} className="p-2 border rounded" required />}
-              <button type="submit" className="col-span-1 md:col-span-2 bg-[#537D5D] text-white p-2 rounded hover:bg-[#73946B] transition">
-                {editingStaffId ? "Update Staff" : "Add Staff"}
-              </button>
+      {/* Modal - same as before */}
+      {modalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white p-6 rounded shadow w-96">
+            <h3 className="text-xl font-bold mb-4">
+              {editStaff ? "Edit Staff" : "Add Staff"}
+            </h3>
+            <form onSubmit={handleSubmit} className="space-y-2">
+              <input
+                name="staffName"
+                value={formData.staffName}
+                onChange={handleChange}
+                placeholder="Name"
+                className="w-full border px-2 py-1 rounded"
+                required
+              />
+              <input
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="Email"
+                className="w-full border px-2 py-1 rounded"
+                required
+              />
+              <input
+                name="role"
+                value={formData.role}
+                onChange={handleChange}
+                placeholder="Role"
+                className="w-full border px-2 py-1 rounded"
+                required
+              />
+              <input
+                name="salary"
+                value={formData.salary}
+                onChange={handleChange}
+                placeholder="Salary"
+                type="number"
+                className="w-full border px-2 py-1 rounded"
+              />
+              <input
+                name="contactNo"
+                value={formData.contactNo}
+                onChange={handleChange}
+                placeholder="Contact No"
+                className="w-full border px-2 py-1 rounded"
+                required
+              />
+              <input
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                placeholder="Address"
+                className="w-full border px-2 py-1 rounded"
+              />
+              {!editStaff && (
+                <input
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Password"
+                  type="password"
+                  className="w-full border px-2 py-1 rounded"
+                  required
+                />
+              )}
+              <div className="flex justify-end gap-2 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  className="px-3 py-1 rounded border hover:bg-gray-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                >
+                  Save
+                </button>
+              </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* Confirmation Modal */}
-      {showConfirm.visible && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md text-center relative">
-            <p className="mb-4 font-semibold">
-              Are you sure you want to {showConfirm.action === "delete" ? "delete" : "toggle status of"} this staff?
-            </p>
-            <div className="flex justify-center gap-4">
-              <button onClick={executeAction} className="bg-[#537D5D] text-white px-4 py-2 rounded hover:bg-[#73946B] transition">Yes</button>
-              <button onClick={() => setShowConfirm({ visible: false, staffId: null, action: "" })} className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400 transition">No</button>
-            </div>
           </div>
         </div>
       )}

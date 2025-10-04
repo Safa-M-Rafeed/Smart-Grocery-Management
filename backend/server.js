@@ -10,22 +10,25 @@ app.use(cors());
 
 // Routes – import BEFORE using them
 const authRoutes = require('./routes/auth');
-const staffDashboardRoutes = require('./routes/staffDashboard');
-const staffRoutes = require("./routes/staffRoutes");
-const attendanceRoutes = require("./routes/attendanceRoutes");
+const staffRoutes = require('./routes/staffRoutes');
+const staffDashboardRoutes = require('./routes/staffDashboard'); // optional
+const attendanceRoutes = require('./routes/attendanceRoutes');
 
 // Use routes
 app.use('/api/auth', authRoutes); // Login/Register
-app.use('/api/staff-dashboard', staffDashboardRoutes); // Admin-only
-app.use("/api/staffs", staffRoutes); // Staff CRUD
-app.use("/api/attendance", attendanceRoutes); // Attendance routes
+app.use('/api/staff-dashboard', staffDashboardRoutes); // Admin-only dashboard (if used)
+app.use('/api/staffs', staffRoutes); // Staff CRUD (plural)
+app.use('/api/staff', staffRoutes);  // also expose singular to avoid front-end mismatch
+app.use('/api/attendance', attendanceRoutes); // Attendance routes
+
 
 // MongoDB connection
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI, {
+      // mongoose options (not strictly necessary for modern drivers but harmless)
       useNewUrlParser: true,
-      useUnifiedTopology: true
+      useUnifiedTopology: true,
     });
     console.log('MongoDB connected');
   } catch (error) {

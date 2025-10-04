@@ -1,9 +1,11 @@
+// backend/routes/auth.js
 const express = require("express");
 const router = express.Router();
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 const Staff = require("../models/Staff");
+const { verifyToken } = require("../middlewares/auth");
 
 // ---------- REGISTER CUSTOMER ----------
 router.post("/register", async (req, res) => {
@@ -13,7 +15,8 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ message: "All fields are required" });
 
     const existingUser = await User.findOne({ email });
-    if (existingUser) return res.status(400).json({ message: "Email already registered" });
+    if (existingUser)
+      return res.status(400).json({ message: "Email already registered" });
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -66,6 +69,27 @@ router.post("/login", async (req, res) => {
     });
   } catch (err) {
     console.error("Login Error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ---------- GET CURRENT LOGGED-IN USER ----------
+router.get("/me", verifyToken, async (req, res) => {
+  try {
+    const { id, role } = req.user;
+    let user;
+
+    if (role === "customer") {
+      user = await User.findById(id).select("-password");
+    } else {
+      user = await Staff.findById(id).select("-password");
+    }
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.json(user);
+  } catch (err) {
+    console.error("Fetch current user error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });

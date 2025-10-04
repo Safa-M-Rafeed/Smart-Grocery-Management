@@ -3,7 +3,7 @@ const Attendance = require("../models/Attendance");
 const Staff = require("../models/Staff");
 const { Parser } = require("json2csv");
 
-// Helper: get start of today
+// Helper: get start of today (00:00)
 const getStartOfDay = () => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -43,6 +43,10 @@ exports.checkOut = async (req, res) => {
       return res.status(400).json({ message: "Already checked out" });
 
     record.checkOut = new Date();
+    // calculate working hours (hours as float)
+    if (record.checkIn && record.checkOut) {
+      record.workingHours = (record.checkOut - record.checkIn) / (1000 * 60 * 60);
+    }
     await record.save();
     res.json({ message: "Checked out successfully", record });
   } catch (err) {
@@ -50,7 +54,7 @@ exports.checkOut = async (req, res) => {
   }
 };
 
-// Get attendance summary for staff
+// Get attendance summary for staff (today + weeklyHours)
 exports.getAttendanceSummary = async (req, res) => {
   try {
     const { staffId } = req.params;
@@ -65,8 +69,9 @@ exports.getAttendanceSummary = async (req, res) => {
 
     let weeklyHours = 0;
     weeklyRecords.forEach(r => {
-      if (r.checkIn && r.checkOut)
+      if (r.checkIn && r.checkOut) {
         weeklyHours += (r.checkOut - r.checkIn) / (1000 * 60 * 60);
+      }
     });
 
     res.json({
@@ -78,7 +83,7 @@ exports.getAttendanceSummary = async (req, res) => {
   }
 };
 
-// Export Daily Attendance
+// Export Daily Attendance (CSV)
 exports.exportDailyAttendance = async (req, res) => {
   try {
     const today = getStartOfDay();
@@ -90,11 +95,12 @@ exports.exportDailyAttendance = async (req, res) => {
     }).populate("staff", "staffName email role");
 
     const csvData = records.map(r => ({
-      Name: r.staff.staffName,
-      Email: r.staff.email,
-      Role: r.staff.role,
+      Name: r.staff ? r.staff.staffName : "--",
+      Email: r.staff ? r.staff.email : "--",
+      Role: r.staff ? r.staff.role : "--",
       CheckIn: r.checkIn ? r.checkIn.toLocaleTimeString() : "--",
       CheckOut: r.checkOut ? r.checkOut.toLocaleTimeString() : "--",
+      WorkingHours: r.workingHours ? r.workingHours.toFixed(2) : "--"
     }));
 
     const parser = new Parser();
@@ -109,7 +115,7 @@ exports.exportDailyAttendance = async (req, res) => {
   }
 };
 
-// Export Weekly Attendance
+// Export Weekly Attendance (CSV)
 exports.exportWeeklyAttendance = async (req, res) => {
   try {
     const today = getStartOfDay();
@@ -122,17 +128,17 @@ exports.exportWeeklyAttendance = async (req, res) => {
 
     const summary = {};
     records.forEach(r => {
-      const staffName = r.staff.staffName;
+      const staffName = r.staff ? r.staff.staffName : "Unknown";
       const checkIn = r.checkIn ? new Date(r.checkIn) : null;
       const checkOut = r.checkOut ? new Date(r.checkOut) : null;
       const hours = checkIn && checkOut ? (checkOut - checkIn) / (1000*60*60) : 0;
 
       if (!summary[staffName])
-        summary[staffName] = { Name: staffName, Email: r.staff.email, Role: r.staff.role, WeeklyHours: 0 };
+        summary[staffName] = { Name: staffName, Email: r.staff ? r.staff.email : "--", Role: r.staff ? r.staff.role : "--", WeeklyHours: 0 };
       summary[staffName].WeeklyHours += hours;
     });
 
-    const csvData = Object.values(summary);
+    const csvData = Object.values(summary).map(s => ({ ...s, WeeklyHours: s.WeeklyHours.toFixed(2) }));
     const parser = new Parser();
     const csv = parser.parse(csvData);
 
@@ -142,5 +148,15 @@ exports.exportWeeklyAttendance = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Failed to export weekly attendance" });
+  }
+};
+
+// (Optional) admin endpoint to list all attendance records
+exports.getAllAttendance = async (req, res) => {
+  try {
+    const records = await Attendance.find().populate("staff", "staffName email role").sort({ date: -1 });
+    res.json(records);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
