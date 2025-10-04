@@ -8,6 +8,7 @@ const staffSchema = new mongoose.Schema({
   password: { type: String, required: true },
   role: { type: String, required: true }, // e.g., Admin, Cashier, etc.
   salary: { type: Number, required: true, min: 0 },
+  permissions: [{ type: String }], 
   contactNo: { 
     type: String, 
     required: true, 

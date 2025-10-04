@@ -1,4 +1,3 @@
-// frontend/src/App.js
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
 import HomePage from "./pages/HomePage";
@@ -8,8 +7,6 @@ import StaffDashboard from "./pages/StaffDashboard";
 import AdminStaff from "./pages/AdminStaff";
 import Unauthorized from "./pages/Unauthorized";
 import ProtectedRoute from "./components/ProtectedRoute";
-
-
 
 function App() {
   return (
@@ -22,8 +19,7 @@ function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
 
-          {/* Protected Dashboards */}
-          {/* Any logged-in staff can access their dashboard */}
+          {/* Staff Dashboard */}
           <Route
             path="/staff-dashboard"
             element={
@@ -33,7 +29,7 @@ function App() {
             }
           />
 
-          {/* Admin-only route for staff management */}
+          {/* Admin Staff Management */}
           <Route
             path="/admin/staff"
             element={

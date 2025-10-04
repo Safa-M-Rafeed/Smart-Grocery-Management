@@ -69,8 +69,8 @@ mongoose.connect(process.env.MONGODB_URI, {})
 (async () => {
   try {
     // Clear existing staff
-    await Staff.deleteMany({});
-    console.log("🗑 Cleared existing staff data");
+    //await Staff.deleteMany({});
+    //console.log("🗑 Cleared existing staff data");
 
     for (let s of staffData) {
       // Hash password

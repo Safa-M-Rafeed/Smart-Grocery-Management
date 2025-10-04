@@ -1,3 +1,4 @@
+//
 import React, { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { FaBars, FaTimes, FaFacebook, FaInstagram, FaLinkedin } from "react-icons/fa";
