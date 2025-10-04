@@ -8,6 +8,19 @@ app.use(express.json());
 const cors = require('cors');
 app.use(cors());
 
+<<<<<<< Updated upstream
+=======
+// Routes
+const authRoutes = require('./routes/auth');
+const staffDashboardRoutes = require('./routes/staffDashboard');
+const staffRoutes = require("./routes/staffRoutes");
+const attendanceRoutes = require("./routes/attendanceRoutes");
+
+app.use('/api/auth', authRoutes); // Login/Register
+app.use('/api/staff-dashboard', staffDashboardRoutes); // Admin-only
+app.use("/api/staffs", staffRoutes);
+app.use("/api/attendance", attendanceRoutes);
+>>>>>>> Stashed changes
 
 // MongoDB connection
 const connectDB = async () => {
