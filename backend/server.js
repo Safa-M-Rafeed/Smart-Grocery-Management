@@ -8,22 +8,25 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// Routes
+// Routes – import BEFORE using them
 const authRoutes = require('./routes/auth');
 const staffDashboardRoutes = require('./routes/staffDashboard');
 const staffRoutes = require("./routes/staffRoutes");
+const attendanceRoutes = require("./routes/attendanceRoutes");
 
 // Use routes
 app.use('/api/auth', authRoutes); // Login/Register
 app.use('/api/staff-dashboard', staffDashboardRoutes); // Admin-only
-app.use("/api/staffs", staffRoutes);
-app.use("/api/attendance", attendanceRoutes);
->>>>>>> Stashed changes
+app.use("/api/staffs", staffRoutes); // Staff CRUD
+app.use("/api/attendance", attendanceRoutes); // Attendance routes
 
 // MongoDB connection
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI);
+    await mongoose.connect(process.env.MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true
+    });
     console.log('MongoDB connected');
   } catch (error) {
     console.error('MongoDB connection error:', error);
@@ -31,10 +34,6 @@ const connectDB = async () => {
   }
 };
 connectDB();
-
-// Staff route
-const staffRoutes = require('./routes/staff');
-app.use('/api/staff', staffRoutes);
 
 // Start server
 const PORT = process.env.PORT || 4000;
