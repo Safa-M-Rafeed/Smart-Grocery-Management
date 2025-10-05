@@ -1,7 +1,7 @@
-// frontend/src/App.jsx
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
+import AdminLayout from "./pages/AdminLayout";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./components/LoginPage";
 import RegisterPage from "./components/RegisterPage";
@@ -9,20 +9,22 @@ import StaffDashboard from "./pages/StaffDashboard";
 import AdminStaff from "./pages/AdminStaff";
 import Unauthorized from "./pages/Unauthorized";
 import ProtectedRoute from "./components/ProtectedRoute";
-import AdminProfile from "./pages/AdminProfile"; // New Profile Page
+import AdminProfile from "./pages/AdminProfile";
 
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Layout />}>
-          {/* Public Pages */}
+        {/* Public pages */}
+        <Route element={<Layout />}>
           <Route index element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
+        </Route>
 
-          {/* Staff Management Subsystem - Admin Only */}
+        {/* Admin/Staff pages */}
+        <Route element={<AdminLayout />}>
           <Route
             path="/staff-dashboard"
             element={
@@ -43,13 +45,10 @@ function App() {
             path="/attendance-dashboard"
             element={
               <ProtectedRoute role="Admin">
-                {/* You can create an AttendanceDashboard page */}
                 <div>Attendance Dashboard Page</div>
               </ProtectedRoute>
             }
           />
-
-          {/* Admin Profile Page */}
           <Route
             path="/admin/profile"
             element={
