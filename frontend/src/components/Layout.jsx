@@ -1,27 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import {
-  FaBars,
-  FaTimes,
-  FaFacebook,
-  FaInstagram,
-  FaLinkedin,
-  FaUserCircle,
-} from "react-icons/fa";
+import { FaBars, FaTimes, FaFacebook, FaInstagram, FaLinkedin, FaUserCircle } from "react-icons/fa";
 
 const Layout = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [user, setUser] = useState(null); // Logged-in user info
+  const [user, setUser] = useState(null);
   const location = useLocation();
   const navigate = useNavigate();
-
-  const toggleMenu = () => setMenuOpen(!menuOpen);
 
   const token = localStorage.getItem("token");
   const role = localStorage.getItem("role");
 
-  // Fetch user info for navbar
+  const toggleMenu = () => setMenuOpen(!menuOpen);
+
+  // Fetch logged-in user info
   useEffect(() => {
     const fetchUser = async () => {
       if (!token) return;
@@ -44,7 +37,7 @@ const Layout = () => {
     navigate("/login");
   };
 
-  // Default nav links
+  // Public nav links only
   const navLinks = [
     { name: "Home", path: "/" },
     { name: "About Us", path: "/about" },
@@ -53,36 +46,21 @@ const Layout = () => {
     { name: "Contact", path: "/contact" },
   ];
 
-  // Staff Management Subsystem links (for Admin)
-  const staffLinks = [
-    { name: "Dashboard", path: "/staff-dashboard" },
-    { name: "Staff Management", path: "/admin/staff" },
-    { name: "Attendance", path: "/attendance-dashboard" },
-  ];
-
-  // Determine which nav links to show
-  const linksToRender = role === "Admin" ? staffLinks : navLinks;
-
   return (
     <div className="flex flex-col min-h-screen font-sans">
       {/* Navbar */}
       <nav className="bg-[#537D5D] text-white shadow-md">
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-          {/* Logo */}
-          <Link to="/" className="text-2xl font-bold text-white">
-            SmartGrocery
-          </Link>
+          <Link to="/" className="text-2xl font-bold text-white">SmartGrocery</Link>
 
           {/* Desktop Links */}
           <div className="hidden md:flex space-x-6 items-center">
-            {linksToRender.map((link, i) => (
+            {navLinks.map((link, i) => (
               <Link
                 key={i}
                 to={link.path}
                 className={`hover:text-[#D2D0A0] font-medium transition ${
-                  location.pathname === link.path
-                    ? "underline underline-offset-4"
-                    : ""
+                  location.pathname === link.path ? "underline underline-offset-4" : ""
                 }`}
               >
                 {link.name}
@@ -111,11 +89,11 @@ const Layout = () => {
                 {profileOpen && (
                   <div className="absolute right-0 mt-2 w-40 bg-white text-gray-700 rounded shadow-lg z-50">
                     <Link
-                      to="/admin/profile"
+                      to="/login"
                       className="block px-4 py-2 hover:bg-gray-100"
                       onClick={() => setProfileOpen(false)}
                     >
-                      Profile
+                      Login
                     </Link>
                     <button
                       onClick={handleLogout}
@@ -128,34 +106,21 @@ const Layout = () => {
               </div>
             ) : (
               <>
-                <Link
-                  to="/login"
-                  className="bg-[#D2D0A0] text-[#537D5D] px-4 py-2 rounded-lg font-semibold hover:bg-[#9EBC8A] transition"
-                >
-                  Login
-                </Link>
-                <Link
-                  to="/register"
-                  className="bg-white text-[#537D5D] px-4 py-2 rounded-lg font-semibold hover:bg-[#D2D0A0] transition"
-                >
-                  Register
-                </Link>
+                <Link to="/login" className="bg-[#D2D0A0] text-[#537D5D] px-4 py-2 rounded-lg font-semibold hover:bg-[#9EBC8A] transition">Login</Link>
+                <Link to="/register" className="bg-white text-[#537D5D] px-4 py-2 rounded-lg font-semibold hover:bg-[#D2D0A0] transition">Register</Link>
               </>
             )}
           </div>
 
-          {/* Mobile Menu Button */}
+          {/* Mobile Menu */}
           <div className="md:hidden flex items-center">
-            <button onClick={toggleMenu}>
-              {menuOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
-            </button>
+            <button onClick={toggleMenu}>{menuOpen ? <FaTimes size={24} /> : <FaBars size={24} />}</button>
           </div>
         </div>
 
-        {/* Mobile Menu */}
         {menuOpen && (
           <div className="md:hidden bg-[#537D5D] px-6 pb-4 space-y-3">
-            {linksToRender.map((link, i) => (
+            {navLinks.map((link, i) => (
               <Link
                 key={i}
                 to={link.path}
@@ -170,13 +135,6 @@ const Layout = () => {
 
             {token ? (
               <div>
-                <Link
-                  to="/admin/profile"
-                  onClick={() => setMenuOpen(false)}
-                  className="block text-white hover:text-[#D2D0A0] px-4 py-2"
-                >
-                  Profile
-                </Link>
                 <button
                   onClick={handleLogout}
                   className="w-full text-left px-4 py-2 text-white hover:text-[#D2D0A0]"
@@ -186,20 +144,8 @@ const Layout = () => {
               </div>
             ) : (
               <>
-                <Link
-                  to="/login"
-                  onClick={() => setMenuOpen(false)}
-                  className="block bg-[#D2D0A0] text-[#537D5D] px-4 py-2 rounded-lg font-semibold hover:bg-[#9EBC8A] transition"
-                >
-                  Login
-                </Link>
-                <Link
-                  to="/register"
-                  onClick={() => setMenuOpen(false)}
-                  className="block bg-white text-[#537D5D] px-4 py-2 rounded-lg font-semibold hover:bg-[#D2D0A0] transition"
-                >
-                  Register
-                </Link>
+                <Link to="/login" onClick={() => setMenuOpen(false)} className="block bg-[#D2D0A0] text-[#537D5D] px-4 py-2 rounded-lg font-semibold hover:bg-[#9EBC8A] transition">Login</Link>
+                <Link to="/register" onClick={() => setMenuOpen(false)} className="block bg-white text-[#537D5D] px-4 py-2 rounded-lg font-semibold hover:bg-[#D2D0A0] transition">Register</Link>
               </>
             )}
           </div>
@@ -210,58 +156,6 @@ const Layout = () => {
       <main className="flex-grow">
         <Outlet />
       </main>
-
-      {/* Footer */}
-      <footer className="bg-[#73946B] text-white mt-12">
-        <div className="container mx-auto px-6 py-12 grid md:grid-cols-4 gap-8">
-          {/* About */}
-          <div>
-            <h4 className="font-bold text-lg mb-4">About SmartGrocery</h4>
-            <p className="text-gray-100">
-              All-in-one grocery management platform for staff, customers, and owners.
-            </p>
-          </div>
-
-          {/* Links */}
-          <div>
-            <h4 className="font-bold text-lg mb-4">Links</h4>
-            <ul className="space-y-2">
-              {navLinks.map((link, i) => (
-                <li key={i}>
-                  <Link to={link.path} className="hover:text-[#D2D0A0] transition">
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Sitemap */}
-          <div>
-            <h4 className="font-bold text-lg mb-4">Sitemap</h4>
-            <ul className="space-y-2">
-              <li>Customers</li>
-              <li>Staff</li>
-              <li>Admin</li>
-              <li>Delivery</li>
-              <li>Loans</li>
-            </ul>
-          </div>
-
-          {/* Social Media */}
-          <div>
-            <h4 className="font-bold text-lg mb-4">Follow Us</h4>
-            <div className="flex space-x-4 text-2xl">
-              <a href="#" className="hover:text-[#D2D0A0] transition"><FaFacebook /></a>
-              <a href="#" className="hover:text-[#D2D0A0] transition"><FaInstagram /></a>
-              <a href="#" className="hover:text-[#D2D0A0] transition"><FaLinkedin /></a>
-            </div>
-          </div>
-        </div>
-        <div className="bg-[#537D5D] text-center py-4 text-gray-100">
-          &copy; 2025 SmartGrocery. All rights reserved.
-        </div>
-      </footer>
     </div>
   );
 };
