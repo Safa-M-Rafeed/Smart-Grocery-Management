@@ -14,6 +14,10 @@ import AdminProfile from "./pages/AdminProfile";
 import WorkSchedules from "./pages/WorkScheduleDashboard";
 import PayrollDashboard from "./pages/PayrollDashboard";
 import PerformanceDashboard from "./pages/PerformanceDashboard"; // ✅ Newly added
+import AboutPage from "./pages/AboutPage";
+import FeaturesPage from "./pages/FeaturesPage";
+import ShopPage from "./pages/ShopPage";
+import ContactPage from "./pages/ContactPage";
 
 function App() {
   return (
@@ -22,10 +26,10 @@ function App() {
         {/* 🌐 Public Site Routes */}
         <Route element={<Layout />}>
           <Route index element={<HomePage />} />
-          <Route path="/about" element={<div>About Page</div>} />
-          <Route path="/features" element={<div>Features Page</div>} />
-          <Route path="/shop" element={<div>Shop Page</div>} />
-          <Route path="/contact" element={<div>Contact Page</div>} />
+          <Route path="about" element={<AboutPage />} />
+          <Route path="features" element={<FeaturesPage />} />
+          <Route path="shop" element={<ShopPage />} />
+          <Route path="contact" element={<ContactPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
