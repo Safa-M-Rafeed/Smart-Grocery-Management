@@ -1,7 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import html2canvas from "html2canvas";
+
+const palette = {
+  darkGreen: "#537D5D",
+  green: "#73946B",
+  lightGreen: "#9EBC8A",
+  beige: "#D2D0A0",
+};
 
 const PayrollDashboard = () => {
   const [staff, setStaff] = useState([]);
@@ -9,9 +16,11 @@ const PayrollDashboard = () => {
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
   const [payroll, setPayroll] = useState([]);
+  const token = localStorage.getItem("token");
+
+  const payslipRef = useRef(null); // ref for generating PDF
 
   const BASE_URL = "http://localhost:4000/api";
-  const token = localStorage.getItem("token");
 
   useEffect(() => {
     const fetchStaff = async () => {
@@ -40,48 +49,68 @@ const PayrollDashboard = () => {
     }
   };
 
-  const downloadPaySlip = (staffName) => {
-    if (payroll.length === 0) return alert("No payroll data to download!");
+  const downloadPaySlip = async (staffName) => {
+    // Filter payroll for this staff
+    const staffPayroll = payroll.filter((p) => p.staffName === staffName);
+    if (staffPayroll.length === 0) return alert("No payroll data!");
 
-    const doc = new jsPDF();
-    doc.setFontSize(18);
-    doc.setTextColor("#537D5D");
-    doc.text(`Pay Slip - ${staffName}`, 14, 22);
-    doc.setFontSize(12);
-    doc.setTextColor("#2F3E2F");
-    doc.text(`Month: ${month}/${year}`, 14, 30);
+    // Create hidden div to render payslip
+    const payslipDiv = document.createElement("div");
+    payslipDiv.style.padding = "20px";
+    payslipDiv.style.backgroundColor = "#fff";
+    payslipDiv.innerHTML = `
+      <h2 style="color: ${palette.darkGreen}">Pay Slip - ${staffName}</h2>
+      <p>Month: ${month}/${year}</p>
+      <table border="1" style="border-collapse: collapse; width: 100%;">
+        <thead style="background-color: ${palette.green}; color: #fff;">
+          <tr>
+            <th>Date</th>
+            <th>Role</th>
+            <th>Hours Worked</th>
+            <th>Hourly Rate</th>
+            <th>Net Pay</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${staffPayroll
+            .map(
+              (p) => `
+            <tr>
+              <td>${p.date}</td>
+              <td>${p.role}</td>
+              <td>${p.hoursWorked}</td>
+              <td>${p.hourlyRate}</td>
+              <td>${p.netPay}</td>
+            </tr>`
+            )
+            .join("")}
+        </tbody>
+      </table>
+      <p style="margin-top:10px;">Total Net Pay: ${staffPayroll
+        .reduce((sum, p) => sum + p.netPay, 0)
+        .toFixed(2)}</p>
+    `;
+    document.body.appendChild(payslipDiv);
 
-    const tableColumn = ["Date", "Role", "Hours Worked", "Hourly Rate", "Net Pay"];
-    const tableRows = [];
+    // Capture as canvas
+    const canvas = await html2canvas(payslipDiv);
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF("p", "pt", "a4");
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+    pdf.save(`${staffName}-PaySlip-${month}-${year}.pdf`);
 
-    payroll.forEach((p) => {
-      if (p.staffName === staffName || !selectedStaff) {
-        const row = [p.date, p.role, p.hoursWorked, p.hourlyRate, p.netPay];
-        tableRows.push(row);
-      }
-    });
-
-    doc.autoTable({
-      head: [tableColumn],
-      body: tableRows,
-      startY: 40,
-      headStyles: { fillColor: [83, 125, 93] }, // #537D5D
-      alternateRowStyles: { fillColor: [158, 188, 138] }, // #9EBC8A
-    });
-
-    const totalPay = tableRows.reduce((sum, row) => sum + row[4], 0);
-    doc.setTextColor("#537D5D");
-    doc.text(`Total Net Pay: ${totalPay}`, 14, doc.lastAutoTable.finalY + 10);
-
-    doc.save(`${staffName}-PaySlip-${month}-${year}.pdf`);
+    // Cleanup
+    document.body.removeChild(payslipDiv);
   };
 
   return (
     <div
       className="container mx-auto mt-6 p-6 rounded-lg"
-      style={{ backgroundColor: "#D2D0A0", minHeight: "100vh" }}
+      style={{ backgroundColor: palette.beige, minHeight: "100vh" }}
     >
-      <h2 className="text-3xl font-bold mb-6 text-[#537D5D]">
+      <h2 className="text-3xl font-bold mb-6" style={{ color: palette.darkGreen }}>
         Payroll Management
       </h2>
 
@@ -139,10 +168,7 @@ const PayrollDashboard = () => {
         </thead>
         <tbody>
           {payroll.map((p, i) => (
-            <tr
-              key={i}
-              className={i % 2 === 0 ? "bg-[#D2D0A0]" : "bg-[#9EBC8A]"}
-            >
+            <tr key={i} className={i % 2 === 0 ? "bg-[#D2D0A0]" : "bg-[#9EBC8A]"}>
               <td className="border px-4 py-2">{p.staffName}</td>
               <td className="border px-4 py-2">{p.role}</td>
               <td className="border px-4 py-2">{p.date}</td>

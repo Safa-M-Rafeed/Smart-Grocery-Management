@@ -6,7 +6,8 @@ import {
   FaFileAlt,
   FaCalendarAlt,
   FaCog,
-  FaMoneyBill, // ✅ Added icon for Payroll
+  FaMoneyBill,
+  FaChartLine, // ✅ Added icon for Performance Records
 } from "react-icons/fa";
 
 const AdminLayout = () => {
@@ -85,7 +86,6 @@ const AdminLayout = () => {
             <FaFileAlt /> <span>Attendance</span>
           </NavLink>
 
-          {/* Work Schedules */}
           <NavLink
             to="/admin/work-schedules"
             className={({ isActive }) =>
@@ -97,7 +97,6 @@ const AdminLayout = () => {
             <FaCalendarAlt /> <span>Work Schedules</span>
           </NavLink>
 
-          {/* Payroll */}
           <NavLink
             to="/admin/payroll"
             className={({ isActive }) =>
@@ -109,15 +108,16 @@ const AdminLayout = () => {
             <FaMoneyBill /> <span>Payroll</span>
           </NavLink>
 
+          {/* ✅ Performance Records */}
           <NavLink
-            to="/admin/profile"
+            to="/admin/performance"
             className={({ isActive }) =>
               `flex items-center gap-3 px-4 py-2 rounded hover:bg-[#73946B] transition ${
                 isActive ? "bg-[#73946B]" : ""
               }`
             }
           >
-            <FaCog /> <span>Profile</span>
+            <FaChartLine /> <span>Performance Records</span>
           </NavLink>
         </nav>
 

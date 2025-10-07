@@ -12,7 +12,8 @@ import Unauthorized from "./pages/Unauthorized";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminProfile from "./pages/AdminProfile";
 import WorkSchedules from "./pages/WorkScheduleDashboard";
-import PayrollDashboard from "./pages/PayrollDashboard"; // ✅ Newly added
+import PayrollDashboard from "./pages/PayrollDashboard";
+import PerformanceDashboard from "./pages/PerformanceDashboard"; // ✅ Newly added
 
 function App() {
   return (
@@ -73,6 +74,17 @@ function App() {
               </ProtectedRoute>
             }
           />
+          
+          {/* 📈 Performance Records Route */}
+          <Route
+            path="/admin/performance"
+            element={
+              <ProtectedRoute role="Admin">
+                <PerformanceDashboard />
+              </ProtectedRoute>
+            }
+          />
+
           {/* 💰 Payroll Route */}
           <Route
             path="/admin/payroll"

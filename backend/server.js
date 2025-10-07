@@ -14,6 +14,7 @@ const staffDashboardRoutes = require("./routes/staffDashboard");
 const attendanceRoutes = require("./routes/attendanceRoutes");
 const workScheduleRoutes = require("./routes/workScheduleRoutes");
 const payrollRoutes = require("./routes/payrollRoutes");
+const performanceRoutes = require("./routes/performanceRoutes");
 
 // Use routes
 app.use("/api/auth", authRoutes);
@@ -23,6 +24,7 @@ app.use("/api/staff", staffRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/work-schedules", workScheduleRoutes); // ✅ matches frontend
 app.use("/api/payroll", payrollRoutes);
+app.use("/api/performance", performanceRoutes);
 
 
 // MongoDB connection
