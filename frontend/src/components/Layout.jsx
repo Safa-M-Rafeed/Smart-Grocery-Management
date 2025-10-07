@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { FaBars, FaTimes, FaFacebook, FaInstagram, FaLinkedin, FaUserCircle } from "react-icons/fa";
+import { FaBars, FaTimes, FaUserCircle } from "react-icons/fa";
 
 const Layout = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -37,7 +37,6 @@ const Layout = () => {
     navigate("/login");
   };
 
-  // Public nav links only
   const navLinks = [
     { name: "Home", path: "/" },
     { name: "About Us", path: "/about" },
@@ -51,13 +50,15 @@ const Layout = () => {
       {/* Navbar */}
       <nav className="bg-[#537D5D] text-white shadow-md">
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-          <Link to="/" className="text-2xl font-bold text-white">SmartGrocery</Link>
+          <Link to="/" className="text-2xl font-bold text-white">
+            SmartGrocery
+          </Link>
 
           {/* Desktop Links */}
           <div className="hidden md:flex space-x-6 items-center">
-            {navLinks.map((link, i) => (
+            {navLinks.map((link) => (
               <Link
-                key={i}
+                key={link.path}
                 to={link.path}
                 className={`hover:text-[#D2D0A0] font-medium transition ${
                   location.pathname === link.path ? "underline underline-offset-4" : ""
@@ -88,13 +89,6 @@ const Layout = () => {
 
                 {profileOpen && (
                   <div className="absolute right-0 mt-2 w-40 bg-white text-gray-700 rounded shadow-lg z-50">
-                    <Link
-                      to="/login"
-                      className="block px-4 py-2 hover:bg-gray-100"
-                      onClick={() => setProfileOpen(false)}
-                    >
-                      Login
-                    </Link>
                     <button
                       onClick={handleLogout}
                       className="w-full text-left px-4 py-2 hover:bg-gray-100"
@@ -106,23 +100,35 @@ const Layout = () => {
               </div>
             ) : (
               <>
-                <Link to="/login" className="bg-[#D2D0A0] text-[#537D5D] px-4 py-2 rounded-lg font-semibold hover:bg-[#9EBC8A] transition">Login</Link>
-                <Link to="/register" className="bg-white text-[#537D5D] px-4 py-2 rounded-lg font-semibold hover:bg-[#D2D0A0] transition">Register</Link>
+                <Link
+                  to="/login"
+                  className="bg-[#D2D0A0] text-[#537D5D] px-4 py-2 rounded-lg font-semibold hover:bg-[#9EBC8A] transition"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/register"
+                  className="bg-white text-[#537D5D] px-4 py-2 rounded-lg font-semibold hover:bg-[#D2D0A0] transition"
+                >
+                  Register
+                </Link>
               </>
             )}
           </div>
 
           {/* Mobile Menu */}
           <div className="md:hidden flex items-center">
-            <button onClick={toggleMenu}>{menuOpen ? <FaTimes size={24} /> : <FaBars size={24} />}</button>
+            <button onClick={toggleMenu}>
+              {menuOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
+            </button>
           </div>
         </div>
 
         {menuOpen && (
           <div className="md:hidden bg-[#537D5D] px-6 pb-4 space-y-3">
-            {navLinks.map((link, i) => (
+            {navLinks.map((link) => (
               <Link
-                key={i}
+                key={link.path}
                 to={link.path}
                 onClick={() => setMenuOpen(false)}
                 className={`block text-white font-medium hover:text-[#D2D0A0] transition ${
@@ -134,18 +140,28 @@ const Layout = () => {
             ))}
 
             {token ? (
-              <div>
-                <button
-                  onClick={handleLogout}
-                  className="w-full text-left px-4 py-2 text-white hover:text-[#D2D0A0]"
-                >
-                  Logout
-                </button>
-              </div>
+              <button
+                onClick={handleLogout}
+                className="w-full text-left px-4 py-2 text-white hover:text-[#D2D0A0]"
+              >
+                Logout
+              </button>
             ) : (
               <>
-                <Link to="/login" onClick={() => setMenuOpen(false)} className="block bg-[#D2D0A0] text-[#537D5D] px-4 py-2 rounded-lg font-semibold hover:bg-[#9EBC8A] transition">Login</Link>
-                <Link to="/register" onClick={() => setMenuOpen(false)} className="block bg-white text-[#537D5D] px-4 py-2 rounded-lg font-semibold hover:bg-[#D2D0A0] transition">Register</Link>
+                <Link
+                  to="/login"
+                  onClick={() => setMenuOpen(false)}
+                  className="block bg-[#D2D0A0] text-[#537D5D] px-4 py-2 rounded-lg font-semibold hover:bg-[#9EBC8A] transition"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/register"
+                  onClick={() => setMenuOpen(false)}
+                  className="block bg-white text-[#537D5D] px-4 py-2 rounded-lg font-semibold hover:bg-[#D2D0A0] transition"
+                >
+                  Register
+                </Link>
               </>
             )}
           </div>
@@ -156,6 +172,11 @@ const Layout = () => {
       <main className="flex-grow">
         <Outlet />
       </main>
+
+      {/* Footer */}
+      <footer className="bg-[#537D5D] text-white text-center py-4 mt-6">
+        <p>© {new Date().getFullYear()} SmartGrocery. All rights reserved.</p>
+      </footer>
     </div>
   );
 };

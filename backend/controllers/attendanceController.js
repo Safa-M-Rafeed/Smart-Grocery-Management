@@ -1,162 +1,79 @@
-// backend/controllers/attendanceController.js
-const Attendance = require("../models/Attendance");
-const Staff = require("../models/Staff");
-const { Parser } = require("json2csv");
+const Attendance = require('../models/Attendance');
+const Staff = require('../models/Staff');
 
-// Helper: get start of today (00:00)
-const getStartOfDay = () => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return today;
-};
-
-// Check In
-exports.checkIn = async (req, res) => {
+// Auto check-in all staff
+exports.autoCheckInAllStaff = async (req, res) => {
   try {
-    const { staffId } = req.params;
-    const today = getStartOfDay();
+    const today = new Date();
+    today.setHours(0,0,0,0);
 
-    let record = await Attendance.findOne({ staff: staffId, date: today });
-    if (record && record.checkIn)
-      return res.status(400).json({ message: "Already checked in" });
+    const allStaff = await Staff.find();
+    const results = [];
 
-    if (!record) record = new Attendance({ staff: staffId, checkIn: new Date(), date: today });
-    else record.checkIn = new Date();
-
-    await record.save();
-    res.json({ message: "Checked in successfully", record });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-// Check Out
-exports.checkOut = async (req, res) => {
-  try {
-    const { staffId } = req.params;
-    const today = getStartOfDay();
-
-    let record = await Attendance.findOne({ staff: staffId, date: today });
-    if (!record || !record.checkIn)
-      return res.status(400).json({ message: "Check in first" });
-    if (record.checkOut)
-      return res.status(400).json({ message: "Already checked out" });
-
-    record.checkOut = new Date();
-    // calculate working hours (hours as float)
-    if (record.checkIn && record.checkOut) {
-      record.workingHours = (record.checkOut - record.checkIn) / (1000 * 60 * 60);
-    }
-    await record.save();
-    res.json({ message: "Checked out successfully", record });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-// Get attendance summary for staff (today + weeklyHours)
-exports.getAttendanceSummary = async (req, res) => {
-  try {
-    const { staffId } = req.params;
-    const today = getStartOfDay();
-
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    weekAgo.setHours(0, 0, 0, 0);
-
-    const todayRecord = await Attendance.findOne({ staff: staffId, date: today });
-    const weeklyRecords = await Attendance.find({ staff: staffId, date: { $gte: weekAgo } });
-
-    let weeklyHours = 0;
-    weeklyRecords.forEach(r => {
-      if (r.checkIn && r.checkOut) {
-        weeklyHours += (r.checkOut - r.checkIn) / (1000 * 60 * 60);
+    for (const staff of allStaff) {
+      const existing = await Attendance.findOne({ staffId: staff._id, date: today });
+      if (existing) {
+        results.push({ staffId: staff._id, status: "Already checked in" });
+        continue;
       }
-    });
 
-    res.json({
-      today: todayRecord ? { checkIn: todayRecord.checkIn, checkOut: todayRecord.checkOut } : null,
-      weeklyHours: weeklyHours.toFixed(2),
-    });
+      const checkInTime = new Date(today);
+      checkInTime.setHours(8,30,0,0); // Default 8:30 AM
+
+      const attendance = new Attendance({
+        staffId: staff._id,
+        checkIn: checkInTime,
+        date: today
+      });
+
+      await attendance.save();
+      results.push({ staffId: staff._id, status: "Checked in" });
+    }
+
+    res.status(200).json({ message: "Auto check-in complete", results });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-// Export Daily Attendance (CSV)
-exports.exportDailyAttendance = async (req, res) => {
+// Get daily attendance summary
+exports.getAttendance = async (req, res) => {
   try {
-    const today = getStartOfDay();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const today = new Date();
+    today.setHours(0,0,0,0);
 
-    const records = await Attendance.find({
-      date: { $gte: today, $lt: tomorrow }
-    }).populate("staff", "staffName email role");
-
-    const csvData = records.map(r => ({
-      Name: r.staff ? r.staff.staffName : "--",
-      Email: r.staff ? r.staff.email : "--",
-      Role: r.staff ? r.staff.role : "--",
-      CheckIn: r.checkIn ? r.checkIn.toLocaleTimeString() : "--",
-      CheckOut: r.checkOut ? r.checkOut.toLocaleTimeString() : "--",
-      WorkingHours: r.workingHours ? r.workingHours.toFixed(2) : "--"
-    }));
-
-    const parser = new Parser();
-    const csv = parser.parse(csvData);
-
-    res.header("Content-Type", "text/csv");
-    res.attachment("attendance_daily.csv");
-    res.send(csv);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Failed to export daily attendance" });
+    const records = await Attendance.find({ date: today }).populate('staffId', 'staffName role');
+    res.status(200).json(records);
+  } catch(err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-// Export Weekly Attendance (CSV)
-exports.exportWeeklyAttendance = async (req, res) => {
+// Manual check-in/check-out for a staff
+exports.manualCheck = async (req,res) => {
   try {
-    const today = getStartOfDay();
-    const weekAgo = new Date(today);
-    weekAgo.setDate(weekAgo.getDate() - 7);
+    const { staffId, type } = req.body;
+    const today = new Date();
+    today.setHours(0,0,0,0);
 
-    const records = await Attendance.find({
-      date: { $gte: weekAgo, $lt: today }
-    }).populate("staff", "staffName email role");
-
-    const summary = {};
-    records.forEach(r => {
-      const staffName = r.staff ? r.staff.staffName : "Unknown";
-      const checkIn = r.checkIn ? new Date(r.checkIn) : null;
-      const checkOut = r.checkOut ? new Date(r.checkOut) : null;
-      const hours = checkIn && checkOut ? (checkOut - checkIn) / (1000*60*60) : 0;
-
-      if (!summary[staffName])
-        summary[staffName] = { Name: staffName, Email: r.staff ? r.staff.email : "--", Role: r.staff ? r.staff.role : "--", WeeklyHours: 0 };
-      summary[staffName].WeeklyHours += hours;
-    });
-
-    const csvData = Object.values(summary).map(s => ({ ...s, WeeklyHours: s.WeeklyHours.toFixed(2) }));
-    const parser = new Parser();
-    const csv = parser.parse(csvData);
-
-    res.header("Content-Type", "text/csv");
-    res.attachment("attendance_weekly.csv");
-    res.send(csv);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Failed to export weekly attendance" });
-  }
-};
-
-// (Optional) admin endpoint to list all attendance records
-exports.getAllAttendance = async (req, res) => {
-  try {
-    const records = await Attendance.find().populate("staff", "staffName email role").sort({ date: -1 });
-    res.json(records);
-  } catch (err) {
+    let record = await Attendance.findOne({ staffId, date: today });
+    if(!record) {
+      if(type === "checkIn") {
+        record = new Attendance({ staffId, checkIn: new Date(), date: today });
+        await record.save();
+        return res.status(200).json({ message: "Checked in" });
+      }
+      return res.status(400).json({ message: "Cannot check-out without check-in" });
+    } else {
+      if(type === "checkOut") {
+        record.checkOut = new Date();
+        await record.save();
+        return res.status(200).json({ message: "Checked out" });
+      } else {
+        return res.status(400).json({ message: "Already checked in" });
+      }
+    }
+  } catch(err) {
     res.status(500).json({ message: err.message });
   }
 };

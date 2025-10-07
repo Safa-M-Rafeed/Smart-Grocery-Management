@@ -1,13 +1,13 @@
-// backend/models/Attendance.js
 const mongoose = require("mongoose");
 
 const attendanceSchema = new mongoose.Schema({
-  staff: { type: mongoose.Schema.Types.ObjectId, ref: "Staff", required: true },
-  date: { type: Date, default: () => new Date().setHours(0, 0, 0, 0) }, // UTC midnight of day
-  checkIn: { type: Date },
-  checkOut: { type: Date },
-  workingHours: { type: Number, default: 0 }, // hours float
-  status: { type: String, enum: ["Present", "Absent", "Half-Day"], default: "Present" }
-}, { timestamps: true });
+  staffId: { type: mongoose.Schema.Types.ObjectId, ref: "Staff", required: true },
+  staffName: { type: String, required: true },
+  role: { type: String, required: true },
+  date: { type: String, required: true }, // yyyy-mm-dd
+  checkIn: { type: String, default: null }, // timestamp string
+  checkOut: { type: String, default: null }, // timestamp string
+  hoursWorked: { type: Number, default: 0 }, // calculated after check-out
+});
 
 module.exports = mongoose.model("Attendance", attendanceSchema);

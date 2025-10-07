@@ -6,30 +6,45 @@ import HomePage from "./pages/HomePage";
 import LoginPage from "./components/LoginPage";
 import RegisterPage from "./components/RegisterPage";
 import StaffDashboard from "./pages/StaffDashboard";
+import AttendanceDashboard from "./pages/AttendanceDashboard";
 import AdminStaff from "./pages/AdminStaff";
 import Unauthorized from "./pages/Unauthorized";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminProfile from "./pages/AdminProfile";
+import WorkSchedules from "./pages/WorkScheduleDashboard";
+import PayrollDashboard from "./pages/PayrollDashboard"; // ✅ Newly added
 
 function App() {
   return (
-    <Router>
+    <Router> 
       <Routes>
-        {/* Public pages */}
+        {/* 🌐 Public Site Routes */}
         <Route element={<Layout />}>
           <Route index element={<HomePage />} />
+          <Route path="/about" element={<div>About Page</div>} />
+          <Route path="/features" element={<div>Features Page</div>} />
+          <Route path="/shop" element={<div>Shop Page</div>} />
+          <Route path="/contact" element={<div>Contact Page</div>} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
         </Route>
 
-        {/* Admin/Staff pages */}
+        {/* 🧭 Admin Dashboard Routes */}
         <Route element={<AdminLayout />}>
           <Route
             path="/staff-dashboard"
             element={
               <ProtectedRoute role="Admin">
                 <StaffDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/attendance-dashboard"
+            element={
+              <ProtectedRoute role="Admin">
+                <AttendanceDashboard />
               </ProtectedRoute>
             }
           />
@@ -42,18 +57,28 @@ function App() {
             }
           />
           <Route
-            path="/attendance-dashboard"
-            element={
-              <ProtectedRoute role="Admin">
-                <div>Attendance Dashboard Page</div>
-              </ProtectedRoute>
-            }
-          />
-          <Route
             path="/admin/profile"
             element={
               <ProtectedRoute role="Admin">
                 <AdminProfile />
+              </ProtectedRoute>
+            }
+          />
+          {/* 🕒 Work Schedules Route */}
+          <Route
+            path="/admin/work-schedules"
+            element={ 
+              <ProtectedRoute role="Admin">
+                <WorkSchedules />
+              </ProtectedRoute>
+            }
+          />
+          {/* 💰 Payroll Route */}
+          <Route
+            path="/admin/payroll"
+            element={
+              <ProtectedRoute role="Admin">
+                <PayrollDashboard />
               </ProtectedRoute>
             }
           />
