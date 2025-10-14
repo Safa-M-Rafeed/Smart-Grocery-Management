@@ -8,4 +8,4 @@ const deliverySchema = new mongoose.Schema({
   staffID: { type: mongoose.Schema.Types.ObjectId, ref: "Staff" }
 });
 
-module.exports = mongoose.model("Delivery", );
+module.exports = mongoose.model("Delivery",deliverySchema );
